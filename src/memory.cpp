@@ -1,5 +1,11 @@
 #include "memory.hpp"
 
+
+Memory::Memory(std::array<uint32_t, 4096> program_data)
+: memory_{program_data}
+{
+}
+
 uint32_t Memory::read_word(uint32_t address) const
 {
   if((address % 4) != 0)
