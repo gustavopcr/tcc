@@ -7,7 +7,7 @@
 
 class FetchStage{
 public:
-  FetchStage(uint32_t& pc, Memory& memory, IF_ID& if_id);
+  explicit FetchStage(uint32_t& pc, Memory& memory, IF_ID& if_id);
   void run();
 
 private:

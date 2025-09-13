@@ -1,0 +1,15 @@
+#ifndef ALU_OPERATION_H
+#define ALU_OPERATION_H
+
+#include <cstdint>
+
+enum class AluOperation : uint8_t {
+    AND = 0b0000,
+    OR  = 0b0001,
+    ADD = 0b0010,
+    SUB = 0b0110,
+    SLT = 0b0111,
+    NOR = 0b1100
+};
+
+#endif
