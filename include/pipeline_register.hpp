@@ -33,6 +33,7 @@ struct ID_EX{
   uint32_t read_data_2;
   int32_t sign_extended_immediate;
   uint8_t rt;
+  uint8_t rs;
   uint8_t rd;
 };
 

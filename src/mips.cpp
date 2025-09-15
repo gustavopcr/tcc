@@ -1,4 +1,5 @@
 #include "mips.hpp"
+#include "register.hpp"
 
 Mips::Mips(Memory memory, 
                 FetchStage fetch, 
@@ -20,13 +21,20 @@ Mips::Mips(Memory memory,
 void Mips::run()
 {
   clock_tick();
+  clock_tick();
+  clock_tick();
+  clock_tick();
+  clock_tick();
+  clock_tick();
+  clock_tick();
+
 }
 
 void Mips::clock_tick()
 {
-  write_back_.run();
-  memory_access_.run();
-  execute_.run();
-  decode_.run();
   fetch_.run();
+  decode_.run();
+  execute_.run();
+  memory_access_.run();
+  write_back_.run();
 }

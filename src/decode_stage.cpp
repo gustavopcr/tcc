@@ -1,4 +1,5 @@
 #include "decode_stage.hpp"
+#include <iostream>
 
 //Instruction types:
 /* 
@@ -37,18 +38,21 @@ void DecodeStage::run()
   id_ex_.read_data_2 = registers_[instruction.rt];
   id_ex_.sign_extended_immediate = static_cast<int32_t>(static_cast<int16_t>(instruction.immediate));
   id_ex_.rt = instruction.rt;
+  id_ex_.rs = instruction.rs;
   id_ex_.rd = instruction.rd;
 
   switch (instruction.op)
   {
     case 0x00: // R-type (e.g., add, sub)
+      id_ex_.control.alu_src = false;
       id_ex_.control.reg_dst = true;
       id_ex_.control.reg_write = true;
       break;
 
     case 0x02:
       pc_ = (if_id_.next_pc & 0xF0000000) | (instruction.address << 2);
-      id_ex_ = {};
+      id_ex_ = ID_EX{};
+      return;
       break;
 
     case 0x23: // lw (load word)
@@ -69,6 +73,7 @@ void DecodeStage::run()
 
     case 0x08: // addi (add immediate)
       id_ex_.control.alu_src = true;
+      id_ex_.control.reg_dst = false;
       id_ex_.control.reg_write = true;
       break;
   }
