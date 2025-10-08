@@ -1,5 +1,4 @@
 #include "decoder.hpp"
-#include <iostream>
 
 //Instruction types:
 /* 
@@ -17,22 +16,43 @@
 000000 01000 01001 00100  00000 100000
 */
 
-Decoder::Decoder(uint32_t& pc, std::array<uint32_t, 32>& registers)
-: pc_{pc}
+Decoder::Decoder(FetchDecodeQueue& input_queue, IssueQueue& issue_queue, RegisterBank& registers)
+: input_queue_{input_queue}
+, issue_queue_{issue_queue}
 , registers_{registers}
 {
 }
 
-
 void Decoder::tick()
 {
-  uint32_t inst{0};
+  if(input_queue_.empty() || issue_queue_.size() >= MAX_ISSUE_BUFFER_SIZE)
+  {
+    return;
+  }
+
+  uint32_t inst = input_queue_.front();
+  input_queue_.pop();
   Instruction instruction = decode(inst);
   
+  IssueEntry issue{};
+  issue.is_valid = true;
+  issue.op = get_alu_operation(instruction.op, instruction.funct);
 
+  issue.src1_is_ready = true;
+  issue.src1_p_reg_or_val = registers_[instruction.rs];
+  
   switch (instruction.op)
   {
     case 0x00: // R-type (e.g., add, sub)
+      issue.src2_is_ready = true;
+      issue.src2_p_reg_or_val = registers_[instruction.rt];
+      issue.dest_p_reg = instruction.rd;
+      break;
+
+    case 0x08: // addi (add immediate)
+      issue.src2_is_ready = true;
+      issue.src2_p_reg_or_val = instruction.immediate;
+      issue.dest_p_reg = instruction.rt;
       break;
 
     case 0x02:
@@ -40,17 +60,22 @@ void Decoder::tick()
       break;
 
     case 0x23: // lw (load word)
+      issue.src2_is_ready = true;
+      issue.src2_p_reg_or_val = instruction.immediate;
+      issue.dest_p_reg = instruction.rt; 
       break;
       
     case 0x2B: // sw (store word)
+      issue.src2_is_ready = true;
+      issue.src2_p_reg_or_val = registers_[instruction.rt];
       break;
 
     case 0x04: // beq (branch if equal)
-      break;
-
-    case 0x08: // addi (add immediate)
+      return;
       break;
   }
+  
+  issue_queue_.push_back(issue);
 }
 
 Instruction decode(uint32_t instruction)

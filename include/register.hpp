@@ -1,5 +1,8 @@
-#ifndef REGISTER_H
-#define REGISTER_H
+#ifndef REGISTER_HPP
+#define REGISTER_HPP
+
+#include <array>
+#include <cstdint>
 
 enum class Register{
   zero,
@@ -35,5 +38,7 @@ enum class Register{
   fp,
   ra
 };
+
+using RegisterBank = std::array<uint32_t, 32>;
 
 #endif

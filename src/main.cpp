@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <string>
-int main(){
+int main()
+{
   std::string alo{};
   std::cout << "ola mundo" << "\n";
 
@@ -22,5 +23,5 @@ int main(){
   {
     std::cout << "registers[" << std::to_string(i)<< "]: " << registers[i] << "\n";
   }
-  Mips mips();
+  Mips mips;
 }

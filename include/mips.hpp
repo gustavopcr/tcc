@@ -1,5 +1,5 @@
-#ifndef MIPS_H
-#define MIPS_H
+#ifndef MIPS_HPP
+#define MIPS_HPP
 
 #include "register.hpp"
 #include <cstdint>

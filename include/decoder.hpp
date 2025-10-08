@@ -1,23 +1,12 @@
-#ifndef DECODER_H
-#define DECODER_H
+#ifndef DECODER_HPP
+#define DECODER_HPP
 
 #include "alu.hpp"
+#include "instruction.hpp"
+#include "register.hpp"
+#include "issuer.hpp"
 #include <cstdint>
 #include <array>
-
-struct Instruction{
-  uint8_t    op;
-  uint8_t    rs;
-  uint8_t    rt;
-  uint8_t    rd;
-  uint8_t shamt;
-  uint8_t funct;
-
-  uint16_t immediate;
-  uint32_t   address;
-};
-
-
 
 //Instruction types:
 /* 
@@ -38,12 +27,13 @@ struct Instruction{
 
 class Decoder{
 public:
-  explicit Decoder(uint32_t& pc, std::array<uint32_t, 32>& registers);
+  explicit Decoder(FetchDecodeQueue& input_queue, IssueQueue& issue_queue, RegisterBank& registers_);
   void tick();
 
 private:
-  uint32_t& pc_;
-  std::array<uint32_t, 32>& registers_;
+  FetchDecodeQueue& input_queue_;
+  IssueQueue& issue_queue_;
+  RegisterBank& registers_;
 };
 
 Instruction decode(uint32_t instruction);

@@ -1,5 +1,5 @@
-#ifndef ALU_H
-#define ALU_H
+#ifndef ALU_HPP
+#define ALU_HPP
 
 #include <cstdint>
 

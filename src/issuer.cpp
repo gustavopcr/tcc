@@ -1,6 +1,8 @@
 #include "issuer.hpp"
 
-Issuer::Issuer()
+Issuer::Issuer(FetchDecodeQueue& input_queue, IssueQueue& issue_queue)
+: input_queue_{input_queue}
+, issue_queue_{issue_queue}
 {
 }
 
