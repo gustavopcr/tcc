@@ -1,5 +1,5 @@
-#ifndef ALU_OPERATION_H
-#define ALU_OPERATION_H
+#ifndef ALU_H
+#define ALU_H
 
 #include <cstdint>
 

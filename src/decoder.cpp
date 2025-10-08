@@ -1,4 +1,4 @@
-#include "decode_stage.hpp"
+#include "decoder.hpp"
 #include <iostream>
 
 //Instruction types:
@@ -17,64 +17,38 @@
 000000 01000 01001 00100  00000 100000
 */
 
-DecodeStage::DecodeStage(uint32_t& pc, std::array<uint32_t, 32>& registers, IF_ID& if_id, ID_EX& id_ex)
+Decoder::Decoder(uint32_t& pc, std::array<uint32_t, 32>& registers)
 : pc_{pc}
 , registers_{registers}
-, if_id_{if_id}
-, id_ex_{id_ex}
 {
 }
 
 
-void DecodeStage::run()
+void Decoder::tick()
 {
-  id_ex_ = ID_EX{};
-
-  Instruction instruction = decode(if_id_.instruction);
+  uint32_t inst{0};
+  Instruction instruction = decode(inst);
   
-  id_ex_.control.alu_op = get_alu_operation(instruction.op, instruction.funct);
-  id_ex_.next_pc = if_id_.next_pc;
-  id_ex_.read_data_1 = registers_[instruction.rs];
-  id_ex_.read_data_2 = registers_[instruction.rt];
-  id_ex_.sign_extended_immediate = static_cast<int32_t>(static_cast<int16_t>(instruction.immediate));
-  id_ex_.rt = instruction.rt;
-  id_ex_.rs = instruction.rs;
-  id_ex_.rd = instruction.rd;
 
   switch (instruction.op)
   {
     case 0x00: // R-type (e.g., add, sub)
-      id_ex_.control.alu_src = false;
-      id_ex_.control.reg_dst = true;
-      id_ex_.control.reg_write = true;
       break;
 
     case 0x02:
-      pc_ = (if_id_.next_pc & 0xF0000000) | (instruction.address << 2);
-      id_ex_ = ID_EX{};
       return;
       break;
 
     case 0x23: // lw (load word)
-      id_ex_.control.alu_src = true;
-      id_ex_.control.mem_to_reg = true;
-      id_ex_.control.reg_write = true;
-      id_ex_.control.mem_read = true;
       break;
       
     case 0x2B: // sw (store word)
-      id_ex_.control.alu_src = true;
-      id_ex_.control.mem_write = true;
       break;
 
     case 0x04: // beq (branch if equal)
-      id_ex_.control.branch = true;
       break;
 
     case 0x08: // addi (add immediate)
-      id_ex_.control.alu_src = true;
-      id_ex_.control.reg_dst = false;
-      id_ex_.control.reg_write = true;
       break;
   }
 }

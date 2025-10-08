@@ -1,8 +1,7 @@
-#ifndef DECODE_STAGE_H
-#define DECODE_STAGE_H
+#ifndef DECODER_H
+#define DECODER_H
 
-#include "pipeline_register.hpp"
-#include "alu_operation.hpp"
+#include "alu.hpp"
 #include <cstdint>
 #include <array>
 
@@ -37,16 +36,14 @@ struct Instruction{
 
 */
 
-class DecodeStage{
+class Decoder{
 public:
-  explicit DecodeStage(uint32_t& pc, std::array<uint32_t, 32>& registers, IF_ID& if_id, ID_EX& id_ex);
-  void run();
+  explicit Decoder(uint32_t& pc, std::array<uint32_t, 32>& registers);
+  void tick();
 
 private:
   uint32_t& pc_;
   std::array<uint32_t, 32>& registers_;
-  IF_ID& if_id_;
-  ID_EX& id_ex_;
 };
 
 Instruction decode(uint32_t instruction);
