@@ -12,7 +12,7 @@ struct Instruction{
   uint8_t shamt;
   uint8_t funct;
 
-  uint16_t immediate;
+  uint32_t immediate;
   uint32_t   address;
 };
 

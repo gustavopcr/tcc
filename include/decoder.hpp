@@ -6,6 +6,7 @@
 #include "register.hpp"
 #include "reservation_station.hpp"
 #include "rat.hpp"
+#include "rob.hpp"
 #include <cstdint>
 #include <array>
 
@@ -31,6 +32,7 @@ public:
   explicit Decoder(FetchDecodeQueue& input_queue, 
                    ReservationStation& reservation_station, 
                    RegisterAliasTable& rat,
+                   ReorderBuffer& rob,
                    RegisterBank& registers);
   void tick();
 
@@ -38,6 +40,7 @@ private:
   FetchDecodeQueue& input_queue_;
   ReservationStation& reservation_station_;
   RegisterAliasTable& rat_;
+  ReorderBuffer& rob_;
   RegisterBank& registers_;
 };
 

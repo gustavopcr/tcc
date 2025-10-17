@@ -24,7 +24,7 @@ struct ReservationStationEntry {
   uint32_t Vk;             // Use if src2_is_ready is true
   uint8_t Qk; // Use if src2_is_ready is false
   
-  uint8_t dest_tag;
+  uint8_t arch_reg;
   uint32_t immediate = 0;
 };
 
@@ -40,7 +40,7 @@ public:
   bool is_full() const;
 
   void update_with_cdb_message(uint8_t tag, uint32_t value);
-  uint8_t add(const ReservationStationEntry& entry_to_add);
+  void add(const ReservationStationEntry& entry_to_add);
 
   std::vector<ReservationStationEntry>& get_entries();
 

@@ -11,7 +11,7 @@ public:
   void tick();
 
 private:
-  uint32_t   pc_;
+  uint32_t&   pc_;
   Memory& memory_;
   FetchDecodeQueue& output_queue_;
 };

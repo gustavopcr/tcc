@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <vector>
+#include "alu.hpp"
 
 enum class RobState
 {
@@ -13,6 +14,7 @@ enum class RobState
 
 struct RobEntry{
   bool is_busy;
+  AluOperation operation;
   RobState state;
   uint8_t arch_dest_reg;
   uint8_t physical_dest_reg;
@@ -23,7 +25,7 @@ class ReorderBuffer
 {
 public:
   explicit ReorderBuffer(size_t size);
-  void add(uint8_t arch_dest_reg);
+  uint8_t add(RobEntry entry); // returns tag
 
 private:
   std::vector<RobEntry> entries_;

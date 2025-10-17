@@ -19,10 +19,12 @@
 Decoder::Decoder(FetchDecodeQueue& input_queue, 
                  ReservationStation& reservation_station, 
                  RegisterAliasTable& rat,
+                 ReorderBuffer& rob,
                  RegisterBank& registers)
 : input_queue_{input_queue}
 , reservation_station_{reservation_station}
 , rat_{rat}
+, rob_{rob}
 , registers_{registers}
 {
 }
@@ -37,26 +39,48 @@ void Decoder::tick()
   uint32_t inst = input_queue_.front();
   input_queue_.pop();
   Instruction instruction = decode(inst);
-  
-  ReservationStationEntry entry{};
-  entry.is_busy = true;
-  entry.op = get_alu_operation(instruction.op, instruction.funct);
 
-  entry.src1_is_ready = true;
-  entry.Vj = registers_[instruction.rs];
+  ReservationStationEntry rs_entry{};
+  rs_entry.op = get_alu_operation(instruction.op, instruction.funct);
+
+  uint8_t rs_tag = rat_.get_tag(instruction.rs);
+  if(rs_tag == 0) //
+  {
+    rs_entry.src1_is_ready = true;
+    rs_entry.Vj = registers_[instruction.rs];
+  }
+  else
+  {
+    rs_entry.src1_is_ready = false;
+    rs_entry.Qj = rs_tag;
+  }
+
+  bool writes_back{false}; // only creates rat and rob for instructions that write back
   
   switch (instruction.op)
   {
     case 0x00: // R-type (e.g., add, sub)
-      entry.src2_is_ready = true;
-      entry.Vj = registers_[instruction.rt];
-      entry.dest_tag = instruction.rd;
+    {
+      uint8_t rt_tag = rat_.get_tag(instruction.rt);
+      if(rt_tag == 0)
+      {
+        rs_entry.src2_is_ready = true;
+        rs_entry.Vk = registers_[instruction.rt];
+      }
+      else
+      {
+        rs_entry.src2_is_ready = false;
+        rs_entry.Qk = rt_tag;
+      }
+      rs_entry.arch_reg = instruction.rd;
+      writes_back = true;
       break;
-
+    }
     case 0x08: // addi (add immediate)
-      entry.src2_is_ready = true;
-      entry.Vj = registers_[instruction.immediate];
-      entry.dest_tag = instruction.rt;
+      rs_entry.src2_is_ready = true;
+      rs_entry.Vk = instruction.immediate;
+      rs_entry.arch_reg = instruction.rt;
+      writes_back = true;
       break;
 
     case 0x02:
@@ -64,28 +88,45 @@ void Decoder::tick()
       break;
 
     case 0x23: // lw (load word)
-      entry.src2_is_ready = true;
-      entry.Vj = instruction.immediate;
-      entry.dest_tag = instruction.rt; 
+      rs_entry.src2_is_ready = true;
+      rs_entry.Vk = instruction.immediate;
+      rs_entry.arch_reg = instruction.rt;
+      writes_back = true;
       break;
       
     case 0x2B: // sw (store word)
-      entry.src2_is_ready = true;
-      entry.Vj = registers_[instruction.rt];
+    {
+      uint8_t rt_tag = rat_.get_tag(instruction.rt);
+      if(rt_tag == 0)
+      {
+        rs_entry.src2_is_ready = true;
+        rs_entry.Vk = registers_[instruction.rt];
+      }else
+      {
+        rs_entry.src2_is_ready = false;
+        rs_entry.Qk = rt_tag;
+      }
       break;
-
+    }
     case 0x04: // beq (branch if equal)
       return;
       break;
   }
-
-  uint8_t new_tag = reservation_station_.add(entry);
-  if (new_tag != 0) {
-    uint8_t dest_reg = instruction.rd;/* get destination register from instruction, e.g., instruction.rd */;
-    if (dest_reg != 0) {
-        rat_.set_busy(dest_reg, new_tag);
-    }
-}
+  if(writes_back)
+  {
+    RobEntry rob_entry{.is_busy = true,
+                       .operation = rs_entry.op,
+                       .state = RobState::Waiting,
+                       .arch_dest_reg = rs_entry.arch_reg,
+                       .physical_dest_reg = 0, // to be assigned
+                       .result_value = 0};
+  
+    uint8_t dest_tag = rob_.add(rob_entry);
+    rat_.set_busy(rs_entry.arch_reg, dest_tag);
+  
+  }
+  
+  reservation_station_.add(rs_entry);
 }
 
 Instruction decode(uint32_t instruction)

@@ -1,7 +1,6 @@
 #ifndef EXECUTE_STAGE_HPP
 #define EXECUTE_STAGE_HPP
 
-#include "issuer.hpp"
 #include "reservation_station.hpp"
 #include "alu.hpp"
 #include <vector>
@@ -10,6 +9,7 @@ struct ExecutionUnit
 {
   bool is_busy;
   int remaining_cycles;
+  AluOperation current_instruction;
   uint8_t dest_tag;
   uint32_t result;
 };
