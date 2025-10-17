@@ -24,7 +24,7 @@ struct ReservationStationEntry {
   uint32_t Vk;             // Use if src2_is_ready is true
   uint8_t Qk; // Use if src2_is_ready is false
   
-  uint8_t arch_reg;
+  uint8_t tag; // will be propagated to CDB
   uint32_t immediate = 0;
 };
 

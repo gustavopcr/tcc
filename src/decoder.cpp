@@ -31,7 +31,7 @@ Decoder::Decoder(FetchDecodeQueue& input_queue,
 
 void Decoder::tick()
 {
-  if(input_queue_.empty() || reservation_station_.is_full())
+  if(input_queue_.empty() || reservation_station_.is_full() || rob_.is_full())
   {
     return;
   }
@@ -55,8 +55,7 @@ void Decoder::tick()
     rs_entry.Qj = rs_tag;
   }
 
-  bool writes_back{false}; // only creates rat and rob for instructions that write back
-  
+  uint8_t dest_reg = 0;
   switch (instruction.op)
   {
     case 0x00: // R-type (e.g., add, sub)
@@ -72,15 +71,13 @@ void Decoder::tick()
         rs_entry.src2_is_ready = false;
         rs_entry.Qk = rt_tag;
       }
-      rs_entry.arch_reg = instruction.rd;
-      writes_back = true;
+      dest_reg = instruction.rd;
       break;
     }
     case 0x08: // addi (add immediate)
       rs_entry.src2_is_ready = true;
       rs_entry.Vk = instruction.immediate;
-      rs_entry.arch_reg = instruction.rt;
-      writes_back = true;
+      dest_reg = instruction.rt;
       break;
 
     case 0x02:
@@ -90,8 +87,7 @@ void Decoder::tick()
     case 0x23: // lw (load word)
       rs_entry.src2_is_ready = true;
       rs_entry.Vk = instruction.immediate;
-      rs_entry.arch_reg = instruction.rt;
-      writes_back = true;
+      dest_reg = instruction.rt;
       break;
       
     case 0x2B: // sw (store word)
@@ -112,19 +108,18 @@ void Decoder::tick()
       return;
       break;
   }
-  if(writes_back)
-  {
-    RobEntry rob_entry{.is_busy = true,
-                       .operation = rs_entry.op,
-                       .state = RobState::Waiting,
-                       .arch_dest_reg = rs_entry.arch_reg,
-                       .physical_dest_reg = 0, // to be assigned
-                       .result_value = 0};
-  
-    uint8_t dest_tag = rob_.add(rob_entry);
-    rat_.set_busy(rs_entry.arch_reg, dest_tag);
-  
-  }
+
+  RobEntry rob_entry{.is_busy = true,
+                      .operation = rs_entry.op,
+                      .state = RobState::Waiting,
+                      .arch_dest_reg = dest_reg,
+                      .physical_dest_reg = 0, // to be assigned
+                      .result_value = 0};
+                
+  uint8_t rob_tag = rob_.add(rob_entry);
+  rs_entry.tag = rob_tag;
+  rat_.set_busy(dest_reg, rob_tag);
+
   
   reservation_station_.add(rs_entry);
 }

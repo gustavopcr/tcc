@@ -26,6 +26,8 @@ class ReorderBuffer
 public:
   explicit ReorderBuffer(size_t size);
   uint8_t add(RobEntry entry); // returns tag
+  bool is_full() const;
+  void commit();
 
 private:
   std::vector<RobEntry> entries_;

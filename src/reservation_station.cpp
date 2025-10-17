@@ -4,7 +4,7 @@ ReservationStation::ReservationStation(size_t size)
 : entries_(size)
 {
   for (size_t i = 0; i < size; ++i) {
-      entries_[i].arch_reg = (i + 1);
+      entries_[i].tag = (i + 1);
   }
 }
 

@@ -13,7 +13,7 @@ struct RegisterAliasTableEntry {
 
 class RegisterAliasTable {
 public:
-  RegisterAliasTable() = default;
+  RegisterAliasTable();
 
 
   bool is_busy(uint8_t reg_index) const;
