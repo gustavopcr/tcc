@@ -12,4 +12,6 @@ enum class AluOperation : uint8_t {
     NOR = 0b1100
 };
 
+uint32_t alu(AluOperation op, uint32_t rs, uint32_t rt);
+
 #endif

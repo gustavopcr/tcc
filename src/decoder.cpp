@@ -16,16 +16,20 @@
 000000 01000 01001 00100  00000 100000
 */
 
-Decoder::Decoder(FetchDecodeQueue& input_queue, IssueQueue& issue_queue, RegisterBank& registers)
+Decoder::Decoder(FetchDecodeQueue& input_queue, 
+                 ReservationStation& reservation_station, 
+                 RegisterAliasTable& rat,
+                 RegisterBank& registers)
 : input_queue_{input_queue}
-, issue_queue_{issue_queue}
+, reservation_station_{reservation_station}
+, rat_{rat}
 , registers_{registers}
 {
 }
 
 void Decoder::tick()
 {
-  if(input_queue_.empty() || issue_queue_.size() >= MAX_ISSUE_BUFFER_SIZE)
+  if(input_queue_.empty() || reservation_station_.is_full())
   {
     return;
   }
@@ -34,25 +38,25 @@ void Decoder::tick()
   input_queue_.pop();
   Instruction instruction = decode(inst);
   
-  IssueEntry issue{};
-  issue.is_valid = true;
-  issue.op = get_alu_operation(instruction.op, instruction.funct);
+  ReservationStationEntry entry{};
+  entry.is_busy = true;
+  entry.op = get_alu_operation(instruction.op, instruction.funct);
 
-  issue.src1_is_ready = true;
-  issue.src1_p_reg_or_val = registers_[instruction.rs];
+  entry.src1_is_ready = true;
+  entry.Vj = registers_[instruction.rs];
   
   switch (instruction.op)
   {
     case 0x00: // R-type (e.g., add, sub)
-      issue.src2_is_ready = true;
-      issue.src2_p_reg_or_val = registers_[instruction.rt];
-      issue.dest_p_reg = instruction.rd;
+      entry.src2_is_ready = true;
+      entry.Vj = registers_[instruction.rt];
+      entry.dest_tag = instruction.rd;
       break;
 
     case 0x08: // addi (add immediate)
-      issue.src2_is_ready = true;
-      issue.src2_p_reg_or_val = instruction.immediate;
-      issue.dest_p_reg = instruction.rt;
+      entry.src2_is_ready = true;
+      entry.Vj = registers_[instruction.immediate];
+      entry.dest_tag = instruction.rt;
       break;
 
     case 0x02:
@@ -60,22 +64,28 @@ void Decoder::tick()
       break;
 
     case 0x23: // lw (load word)
-      issue.src2_is_ready = true;
-      issue.src2_p_reg_or_val = instruction.immediate;
-      issue.dest_p_reg = instruction.rt; 
+      entry.src2_is_ready = true;
+      entry.Vj = instruction.immediate;
+      entry.dest_tag = instruction.rt; 
       break;
       
     case 0x2B: // sw (store word)
-      issue.src2_is_ready = true;
-      issue.src2_p_reg_or_val = registers_[instruction.rt];
+      entry.src2_is_ready = true;
+      entry.Vj = registers_[instruction.rt];
       break;
 
     case 0x04: // beq (branch if equal)
       return;
       break;
   }
-  
-  issue_queue_.push_back(issue);
+
+  uint8_t new_tag = reservation_station_.add(entry);
+  if (new_tag != 0) {
+    uint8_t dest_reg = instruction.rd;/* get destination register from instruction, e.g., instruction.rd */;
+    if (dest_reg != 0) {
+        rat_.set_busy(dest_reg, new_tag);
+    }
+}
 }
 
 Instruction decode(uint32_t instruction)

@@ -1,16 +1,4 @@
-#include "issuer.hpp"
-
-Issuer::Issuer(FetchDecodeQueue& input_queue, IssueQueue& issue_queue)
-: input_queue_{input_queue}
-, issue_queue_{issue_queue}
-{
-}
-
-
-void Issuer::tick()
-{
-}
-
+#include "alu.hpp"
 
 uint32_t alu(AluOperation op, uint32_t rs, uint32_t rt)
 {

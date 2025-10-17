@@ -4,7 +4,8 @@
 #include "alu.hpp"
 #include "instruction.hpp"
 #include "register.hpp"
-#include "issuer.hpp"
+#include "reservation_station.hpp"
+#include "rat.hpp"
 #include <cstdint>
 #include <array>
 
@@ -27,12 +28,16 @@
 
 class Decoder{
 public:
-  explicit Decoder(FetchDecodeQueue& input_queue, IssueQueue& issue_queue, RegisterBank& registers_);
+  explicit Decoder(FetchDecodeQueue& input_queue, 
+                   ReservationStation& reservation_station, 
+                   RegisterAliasTable& rat,
+                   RegisterBank& registers);
   void tick();
 
 private:
   FetchDecodeQueue& input_queue_;
-  IssueQueue& issue_queue_;
+  ReservationStation& reservation_station_;
+  RegisterAliasTable& rat_;
   RegisterBank& registers_;
 };
 
