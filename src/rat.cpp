@@ -24,6 +24,13 @@ void RegisterAliasTable::set_busy(uint8_t reg_index, uint8_t tag) {
   }
 }
 
+void RegisterAliasTable::clear_busy(uint8_t reg_index) {
+    if (reg_index != 0) {
+      entries_[reg_index].is_busy = false;
+      entries_[reg_index].tag = 0;
+    }
+}
+
 // Update the RAT when a result is broadcast on the CDB
 // This is the writeback logic for the RAT.
 void RegisterAliasTable::update_from_cdb(uint8_t tag) {

@@ -19,6 +19,7 @@ public:
   bool is_busy(uint8_t reg_index) const;
   uint8_t get_tag(uint8_t reg_index) const;
   void set_busy(uint8_t reg_index, uint8_t tag);
+  void clear_busy(uint8_t reg_index);
   void update_from_cdb(uint8_t tag);
 
 private:

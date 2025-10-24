@@ -3,15 +3,20 @@
 
 #include "reservation_station.hpp"
 #include "alu.hpp"
+#include "rob.hpp"
+#include "memory.hpp"
 #include <vector>
 
-struct ExecutionUnit
-{
-  bool is_busy;
-  int remaining_cycles;
-  AluOperation current_instruction;
-  uint8_t dest_tag;
-  uint32_t result;
+struct CdbMessage {
+    uint8_t tag;
+    uint32_t result;
+};
+
+struct ExecutionUnit {
+    bool is_busy = false;
+    int remaining_cycles = 0;
+    ReservationStationEntry current_instruction; 
+    uint32_t address = 0;
 };
 
 struct ExecutionConfig
@@ -24,13 +29,18 @@ struct ExecutionConfig
 
 class ExecutionStage{
 public:
-  explicit ExecutionStage(ExecutionConfig ex_config, ReservationStation& reservation_station);
+  explicit ExecutionStage(ExecutionConfig ex_config, ReservationStation& reservation_station, ReorderBuffer& rob, Memory& Memory);
 
   void tick();
 private:
+  void issue_ready_instructions();
+  void process_completed_instructions();
+  
   const ExecutionConfig ex_config_;
   std::vector<ExecutionUnit> alus_;
   std::vector<ExecutionUnit> mem_units_;
   ReservationStation& reservation_station_;
+  ReorderBuffer& rob_;
+  Memory& memory_;
 };
 #endif

@@ -1,9 +1,11 @@
 #ifndef ROB_HPP
 #define ROB_HPP
 
+#include "alu.hpp"
+#include "register.hpp"
+#include "rat.hpp"
 #include <cstdint>
 #include <vector>
-#include "alu.hpp"
 
 enum class RobState
 {
@@ -27,7 +29,10 @@ public:
   explicit ReorderBuffer(size_t size);
   uint8_t add(RobEntry entry); // returns tag
   bool is_full() const;
-  void commit();
+  void update_entry(uint8_t tag, uint32_t value);
+
+  void commit(RegisterBank& registers, RegisterAliasTable& rat);
+
 
 private:
   std::vector<RobEntry> entries_;
