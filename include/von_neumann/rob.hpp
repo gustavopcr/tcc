@@ -1,9 +1,9 @@
 #ifndef ROB_HPP
 #define ROB_HPP
 
-#include "alu.hpp"
-#include "register.hpp"
-#include "rat.hpp"
+#include "von_neumann/alu.hpp"
+#include "von_neumann/register.hpp"
+#include "von_neumann/rat.hpp"
 #include <cstdint>
 #include <vector>
 

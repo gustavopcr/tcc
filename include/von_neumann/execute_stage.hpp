@@ -1,10 +1,10 @@
 #ifndef EXECUTE_STAGE_HPP
 #define EXECUTE_STAGE_HPP
 
-#include "reservation_station.hpp"
-#include "alu.hpp"
-#include "rob.hpp"
-#include "memory.hpp"
+#include "von_neumann/reservation_station.hpp"
+#include "von_neumann/alu.hpp"
+#include "von_neumann/rob.hpp"
+#include "von_neumann/memory.hpp"
 #include <vector>
 
 struct CdbMessage {

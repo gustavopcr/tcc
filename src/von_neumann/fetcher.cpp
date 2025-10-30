@@ -1,4 +1,4 @@
-#include "fetcher.hpp"
+#include "von_neumann/fetcher.hpp"
 
 Fetcher::Fetcher(uint32_t& pc, Memory& memory, FetchDecodeQueue& output_queue)
 : pc_{pc}

@@ -1,4 +1,4 @@
-#include "mips.hpp"
+#include "von_neumann/mips.hpp"
 
 #include <iostream>
 #include <string>

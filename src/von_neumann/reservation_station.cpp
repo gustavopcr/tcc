@@ -1,4 +1,4 @@
-#include "reservation_station.hpp"
+#include "von_neumann/reservation_station.hpp"
 
 ReservationStation::ReservationStation(size_t size) 
 : entries_(size)

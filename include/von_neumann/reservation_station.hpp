@@ -1,7 +1,7 @@
 #ifndef RESERVATION_STATION_HPP
 #define RESERVATION_STATION_HPP
 
-#include "alu.hpp"
+#include "von_neumann/alu.hpp"
 #include <cstdint>
 #include <vector>
 #include <optional>

@@ -1,4 +1,4 @@
-#include "memory.hpp"
+#include "von_neumann/memory.hpp"
 
 
 Memory::Memory(std::array<uint32_t, 4096> program_data)

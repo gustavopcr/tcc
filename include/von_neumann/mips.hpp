@@ -1,7 +1,7 @@
 #ifndef MIPS_HPP
 #define MIPS_HPP
 
-#include "register.hpp"
+#include "von_neumann/register.hpp"
 #include <cstdint>
 #include <array>
 

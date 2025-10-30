@@ -1,4 +1,4 @@
-#include "decoder.hpp"
+#include "von_neumann/decoder.hpp"
 
 //Instruction types:
 /* 

@@ -1,12 +1,12 @@
 #ifndef DECODER_HPP
 #define DECODER_HPP
 
-#include "alu.hpp"
-#include "instruction.hpp"
-#include "register.hpp"
-#include "reservation_station.hpp"
-#include "rat.hpp"
-#include "rob.hpp"
+#include "von_neumann/alu.hpp"
+#include "von_neumann/instruction.hpp"
+#include "von_neumann/register.hpp"
+#include "von_neumann/reservation_station.hpp"
+#include "von_neumann/rat.hpp"
+#include "von_neumann/rob.hpp"
 #include <cstdint>
 #include <array>
 

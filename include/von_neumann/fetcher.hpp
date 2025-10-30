@@ -1,8 +1,8 @@
 #ifndef FETCHER_HPP
 #define FETCHER_HPP
 
-#include "memory.hpp"
-#include "instruction.hpp"
+#include "von_neumann/memory.hpp"
+#include "von_neumann/instruction.hpp"
 #include <cstdint>
 
 class Fetcher{

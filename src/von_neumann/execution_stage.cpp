@@ -1,4 +1,4 @@
-#include "execute_stage.hpp"
+#include "von_neumann/execute_stage.hpp"
 
 ExecutionStage::ExecutionStage(ExecutionConfig ex_config, ReservationStation& reservation_station, ReorderBuffer& rob, Memory& memory)
   : ex_config_{ex_config}

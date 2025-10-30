@@ -1,4 +1,4 @@
-#include "rat.hpp"
+#include "von_neumann/rat.hpp"
 
 RegisterAliasTable::RegisterAliasTable()
 : entries_{}
