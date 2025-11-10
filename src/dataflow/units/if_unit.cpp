@@ -2,9 +2,12 @@
 
 void IfUnit::tick()
 {
-  auto mt = matched_tokens_.front();
-  auto ep = fetch_instruction(mt);
-  execute_queue_.push(ep);
+  if(!matched_tokens_.empty())
+  {
+    auto mt = matched_tokens_.front();
+    auto ep = fetch_instruction(mt);
+    execute_queue_.push(ep);
+  }
 }
 
 /*

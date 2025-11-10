@@ -7,7 +7,7 @@ void WmUnit::tick(Token token)
   auto tokens = waiting_token_mem_.find(token_tag);
   if(tokens != waiting_token_mem_.end())
   {
-    auto token_list = tokens->second;
+    auto& token_list = tokens->second;
     tokens->second.push_back(token);
     auto fr_rule = fr_map_.find(token.ip);
     if(fr_rule != fr_map_.end() && token_list.size() == fr_rule->second)
@@ -16,8 +16,7 @@ void WmUnit::tick(Token token)
       MatchedToken mt = match_token(token_list);
       // inserir matched token em fila compartilhada entre wm-unit e instruction fetch
       matched_tokens_.push(mt);
-      matched_tokens_.push(mt);
-
+      waiting_token_mem_.erase(tokens);
     }
     
   }
