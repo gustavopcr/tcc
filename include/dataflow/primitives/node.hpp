@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <unordered_map>
-
+#include <string>
 
 struct Destination
 {
@@ -27,4 +27,6 @@ struct Node
 };
 
 using NodeGraph = std::unordered_map<size_t, Node>; // maps instruction pointer to corresponding node
+
+NodeGraph parse_graph(std::string_view file_path);
 #endif

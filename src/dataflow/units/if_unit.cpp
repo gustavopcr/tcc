@@ -1,5 +1,12 @@
 #include "if_unit.hpp"
 
+IfUnit::IfUnit(std::queue<MatchedToken>& matched_tokens, NodeGraph& node_graph, std::queue<ExecutionPackage>& execute_queue)
+: matched_tokens_{matched_tokens}
+, node_graph_{node_graph}
+, execute_queue_{execute_queue}
+{
+}
+
 void IfUnit::tick()
 {
   if(!matched_tokens_.empty())
@@ -10,15 +17,6 @@ void IfUnit::tick()
   }
 }
 
-/*
-struct ExecutionPackage
-{
-  size_t fp;
-  Operation op;
-  std::vector<size_t> operands;
-  std::vector<Destination> destinations;
-};
-*/
 ExecutionPackage IfUnit::fetch_instruction(MatchedToken mt)
 {
   auto node = node_graph_.at(mt.ip);

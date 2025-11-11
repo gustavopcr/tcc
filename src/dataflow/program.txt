@@ -1,0 +1,15 @@
+# A simple program to calculate (a+b) * (a-b)
+# Node 1 and 2 are inputs (will be given tokens by a 'start' function)
+# Node 3 is a FORK for 'a'
+# Node 4 is a FORK for 'b'
+
+3  FORK   1   10:0 11:0   # Fork 'a' to ADD (10) and SUB (11)
+4  FORK   1   10:1 11:1   # Fork 'b' to ADD (10) and SUB (11)
+
+10 ADD    2   20:0        # (a+b). Sends to MULT (20)
+11 SUB    2   20:1        # (a-b). Sends to MULT (20)
+
+20 MULT   2   30:0        # (a+b)*(a-b). Sends to output (30)
+
+# Node 30 is the final output
+30 FORK   1               # A "halt" or "print" node. No destinations.

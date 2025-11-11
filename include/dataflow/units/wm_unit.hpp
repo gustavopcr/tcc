@@ -11,6 +11,7 @@ using FiringRuleMap = std::unordered_map<size_t, size_t>; // maps node tag to ho
 class WmUnit
 {
 public:
+  WmUnit(FiringRuleMap& fr, std::queue<MatchedToken>& matched_tokens_);
   void tick(Token token);
   std::vector<size_t> get_work_nodes(); // returns id of nodes that can go to instruction fetch
 

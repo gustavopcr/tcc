@@ -3,6 +3,12 @@
 #include "dataflow/primitives/operation.hpp"
 #include <stdexcept>
 
+ExUnit::ExUnit(std::queue<ExecutionPackage>& execute_queue, std::queue<Token>& token_queue)
+: execute_queue_{execute_queue}
+, token_queue_{token_queue}
+{
+}
+
 OperationCycles ExUnit::get_op_cycle(Operation op) const
 {
   switch (op)

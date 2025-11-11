@@ -10,12 +10,13 @@
 class IfUnit
 {
 public:
+  IfUnit(std::queue<MatchedToken>& matched_tokens_, NodeGraph& node_graph, std::queue<ExecutionPackage>& execute_queue);
   void tick();
 
 private:
   ExecutionPackage fetch_instruction(MatchedToken mt);
   
-  std::queue<MatchedToken> matched_tokens_;
+  std::queue<MatchedToken>& matched_tokens_;
   NodeGraph& node_graph_;
   std::queue<ExecutionPackage>& execute_queue_;
 };

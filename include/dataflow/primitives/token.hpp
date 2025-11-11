@@ -29,4 +29,20 @@ struct MatchedToken
   std::vector<uint64_t> operands;
 };
 
+namespace std
+{
+  template<>
+  struct hash<TokenTag>
+  {
+    std::size_t operator()(const TokenTag& tag) const
+    {
+      // 1. Get the hashes of the individual members.
+      std::size_t hash_ip = std::hash<uint64_t>{}(tag.ip);
+      std::size_t hash_fp = std::hash<uint64_t>{}(tag.fp);
+
+      // 2. Combine them. (This is a common formula).
+      return hash_ip ^ (hash_fp + 0x9e3779b9 + (hash_ip << 6) + (hash_ip >> 2));
+    }
+  };
+}
 #endif

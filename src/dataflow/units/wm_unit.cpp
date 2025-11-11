@@ -1,6 +1,13 @@
 #include "dataflow/units/wm_unit.hpp"
 #include <iostream>
 
+WmUnit::WmUnit(FiringRuleMap& fr, std::queue<MatchedToken>& matched_tokens)
+: waiting_token_mem_{}
+, fr_map_{fr}
+, matched_tokens_{matched_tokens}
+{
+}
+
 void WmUnit::tick(Token token)
 {
   TokenTag token_tag{token.ip, token.fp};
