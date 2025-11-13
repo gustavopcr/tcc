@@ -14,6 +14,7 @@ public:
   WmUnit(FiringRuleMap& fr, std::queue<MatchedToken>& matched_tokens_);
   void tick(Token token);
   std::vector<size_t> get_work_nodes(); // returns id of nodes that can go to instruction fetch
+  bool is_idle() const;
 
 private:
   MatchedToken match_token(const std::vector<Token>& tokens);

@@ -3,13 +3,20 @@
 
 enum class Operation
 {
+  // --- Computational Nodes ---
   ADD,
   SUB,
   MULT,
   DIV,
+
+  // --- Control/Routing Nodes ---
   FORK,
   SWITCH,
   MERGE
+
+  // --- Host Interface Nodes ---
+  INPUT,
+  OUTPUT
 };
 
 enum class OperationCycles
@@ -21,6 +28,8 @@ enum class OperationCycles
   FORK = 3,
   SWITCH = 4,
   MERGE = 5
+  INPUT = 1,
+  OUTPUT = 1,
 };
 
 #endif

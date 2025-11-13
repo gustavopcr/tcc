@@ -20,6 +20,7 @@ private:
   std::queue<Token> token_queue_;
   std::queue<MatchedToken> matched_token_queue_;
   std::queue<ExecutionPackage> execution_queue_;
+  bool is_idle() const;
 
   WmUnit wm_unit_;
   IfUnit if_unit_;

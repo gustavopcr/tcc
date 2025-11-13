@@ -112,3 +112,16 @@ void ExUnit::execute(AluSlot& as)
   }
     
 }
+
+
+bool ExUnit::is_idle() const
+{
+  for (const auto& slot : alus_)
+  {
+    if (slot.has_value())
+    {
+      return false;
+    }
+  }
+  return true;
+}

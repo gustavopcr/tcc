@@ -26,6 +26,7 @@ public:
 private:
   void execute(AluSlot& as);
   OperationCycles get_op_cycle(Operation op) const;
+  bool is_idle() const;
   
   std::array<std::optional<AluSlot>, ALU_AMOUNT> alus_;
   std::queue<ExecutionPackage>& execute_queue_; // input
