@@ -12,7 +12,8 @@ class Dataflow
 {
 public:
   Dataflow();
-  void run();
+  void Dataflow::run(const std::vector<uint64_t>& initial_data_values);
+
   void load_program(std::string_view graph_file);
 private:
   NodeGraph node_graph_;

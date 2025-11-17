@@ -12,6 +12,8 @@ Operation operation_from_string(const std::string& op_str)
  if (op_str == "FORK") return Operation::FORK;
  if (op_str == "SWITCH") return Operation::SWITCH;
  if (op_str == "MERGE") return Operation::MERGE;
+ if (op_str == "LOAD") return Operation::LOAD;
+ if (op_str == "STORE") return Operation::STORE;
  if (op_str == "INPUT") return Operation::INPUT;
  if (op_str == "OUTPUT") return Operation::OUTPUT;
  throw std::runtime_error("Unknown operation: " + op_str);
@@ -35,14 +37,14 @@ Dataflow::Dataflow()
 // a 'Token' class with a constructor like:
 // Token(const Data& data, size_t dest_ip, uint8_t dest_port);
 
-void Dataflow::run(const std::vector<Data>& initial_data_values)
+void Dataflow::run(const std::vector<uint64_t>& initial_data_values)
 {
   const size_t MAX_CYCLES = 1000000; 
   size_t current_cycle = 0;
-
+std::vector<Destination> input_destinations_;
 // In Dataflow.cpp, inside run()
 std::cout << "Bootstrapping dataflow..." << std::endl;
-if (initial_data_values.size() != input_destinations_.size()) {
+if (initial_data_values.size() <= 0) {
     throw std::runtime_error("Input data count mismatch.");
 }
 
@@ -52,7 +54,6 @@ for (size_t i = 0; i < initial_data_values.size(); ++i)
     const std::vector<Destination>& dests = input_destinations_[i];
 
     for (const Destination& dest : dests)
-    S
     {
         // We can fill out most of the token:
         

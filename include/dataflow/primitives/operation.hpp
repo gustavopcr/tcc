@@ -12,8 +12,11 @@ enum class Operation
   // --- Control/Routing Nodes ---
   FORK,
   SWITCH,
-  MERGE
+  MERGE,
 
+  // --- Memory 
+  LOAD,
+  STORE,
   // --- Host Interface Nodes ---
   INPUT,
   OUTPUT
@@ -27,7 +30,9 @@ enum class OperationCycles
   DIV = 6,
   FORK = 3,
   SWITCH = 4,
-  MERGE = 5
+  MERGE = 5,
+  LOAD = 20,
+  STORE = 20,
   INPUT = 1,
   OUTPUT = 1,
 };
