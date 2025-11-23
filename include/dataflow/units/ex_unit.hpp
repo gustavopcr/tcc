@@ -4,6 +4,7 @@
 #include "dataflow/primitives/token.hpp"
 #include "dataflow/primitives/node.hpp"
 #include "dataflow/primitives/execution_pacakge.hpp"
+#include "dataflow/units/mem_unit.hpp"
 #include <vector>
 #include <queue>
 #include <utility>
@@ -21,13 +22,17 @@ struct AluSlot
 class ExUnit
 {
 public:
-  ExUnit(std::queue<ExecutionPackage>& execute_queue, std::queue<Token>& token_queue);
+  ExUnit(std::queue<ExecutionPackage>& execute_queue, 
+           std::queue<Token>& token_queue,
+           MemoryUnit& mem_unit);
   void tick();
+  bool is_idle() const;
+
 private:
   void execute(AluSlot& as);
   OperationCycles get_op_cycle(Operation op) const;
-  bool is_idle() const;
   
+  MemoryUnit& mem_unit_;
   std::array<std::optional<AluSlot>, ALU_AMOUNT> alus_;
   std::queue<ExecutionPackage>& execute_queue_; // input
   std::queue<Token>& token_queue_; // output

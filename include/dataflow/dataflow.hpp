@@ -6,6 +6,8 @@
 #include "dataflow/units/wm_unit.hpp"
 #include "dataflow/units/if_unit.hpp"
 #include "dataflow/units/ex_unit.hpp"
+#include "dataflow/units/mem_unit.hpp"
+
 #include <queue>
 #include <string>
 class Dataflow
@@ -15,6 +17,8 @@ public:
   void Dataflow::run(const std::vector<uint64_t>& initial_data_values);
 
   void load_program(std::string_view graph_file);
+  void set_inputs(const std::vector<uint64_t>& input_data);
+  
 private:
   NodeGraph node_graph_;
   FiringRuleMap fr_rules_;
@@ -23,9 +27,12 @@ private:
   std::queue<ExecutionPackage> execution_queue_;
   bool is_idle() const;
 
+  MemoryUnit mem_unit_;
   WmUnit wm_unit_;
   IfUnit if_unit_;
   ExUnit ex_unit_;
+
+  std::vector<std::vector<Destination>> input_destinations_;
 };
 
 Dataflow create_dataflow(std::string_view graph_file);

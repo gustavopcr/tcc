@@ -12,6 +12,7 @@ void IfUnit::tick()
   if(!matched_tokens_.empty())
   {
     auto mt = matched_tokens_.front();
+    matched_tokens_.pop();
     auto ep = fetch_instruction(mt);
     execute_queue_.push(ep);
   }

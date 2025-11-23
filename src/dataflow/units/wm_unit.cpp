@@ -53,7 +53,7 @@ std::vector<size_t> WmUnit::get_work_nodes()
   return work_nodes;
 }
 
-bool WmUnit::is_idle()
+bool WmUnit::is_idle() const
 {
   return waiting_token_mem_.empty();
 }
