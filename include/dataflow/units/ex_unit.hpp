@@ -30,8 +30,7 @@ public:
 
 private:
   void execute(AluSlot& as);
-  OperationCycles get_op_cycle(Operation op) const;
-  
+  size_t fp_counter_{0};
   MemoryUnit& mem_unit_;
   std::array<std::optional<AluSlot>, ALU_AMOUNT> alus_;
   std::queue<ExecutionPackage>& execute_queue_; // input

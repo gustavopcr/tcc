@@ -4,22 +4,6 @@
 #include <iostream>
 #include <stdexcept>
 
-// Helper to map strings to enums
-Operation operation_from_string(const std::string& op_str)
-{
-    if (op_str == "ADD")    return Operation::ADD;
-    if (op_str == "SUB")    return Operation::SUB;
-    if (op_str == "MULT")   return Operation::MULT;
-    if (op_str == "DIV")    return Operation::DIV;
-    if (op_str == "FORK")   return Operation::FORK;
-    if (op_str == "SWITCH") return Operation::SWITCH;
-    if (op_str == "MERGE")  return Operation::MERGE;
-    if (op_str == "LOAD")   return Operation::LOAD;
-    if (op_str == "STORE")  return Operation::STORE;
-    if (op_str == "INPUT")  return Operation::INPUT;
-    if (op_str == "OUTPUT") return Operation::OUTPUT;
-    throw std::runtime_error("Unknown operation: " + op_str);
-}
 
 Dataflow::Dataflow()
     : node_graph_()
@@ -128,29 +112,7 @@ void Dataflow::run(const std::vector<uint64_t>& initial_data_values)
 
     std::cout << "Bootstrapping dataflow..." << std::endl;
 
-    if (initial_data_values.size() != input_destinations_.size()) {
-        throw std::runtime_error("Input count mismatch: Graph expects " + 
-            std::to_string(input_destinations_.size()) + ", got " + 
-            std::to_string(initial_data_values.size()));
-    }
-
-    // --- Inject Initial Tokens ---
-    for (size_t i = 0; i < initial_data_values.size(); ++i)
-    {
-        const uint64_t& data_value = initial_data_values[i];
-        const std::vector<Destination>& dests = input_destinations_[i];
-
-        for (const Destination& dest : dests)
-        {
-            Token t;
-            t.v = data_value;       
-            t.ip = dest.ip;         
-            t.p = dest.port;        
-            t.fp = 0; // Frame Pointer 0
-            
-            token_queue_.push(t);
-        }
-    }
+    set_inputs(initial_data_values);
 
     std::cout << "Dataflow simulation starting..." << std::endl;
 

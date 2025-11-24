@@ -2,6 +2,7 @@
 #define DATAFLOW_HPP
 #include "dataflow/primitives/token.hpp"
 #include "dataflow/primitives/node.hpp"
+#include "dataflow/primitives/operation.hpp"
 #include "dataflow/primitives/execution_pacakge.hpp"
 #include "dataflow/units/wm_unit.hpp"
 #include "dataflow/units/if_unit.hpp"
