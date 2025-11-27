@@ -2,6 +2,7 @@
 #define OPERATION_HPP
 
 #include <string>
+#include <stdexcept>
 
 enum class Operation
 {

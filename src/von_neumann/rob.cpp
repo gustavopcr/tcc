@@ -1,83 +1,76 @@
 #include "von_neumann/rob.hpp"
 
-ReorderBuffer::ReorderBuffer(size_t size)
-  : entries_(size)
-  , head_(0)
-  , tail_(0)
-  , size_(size)
-{
-  for (auto &e : entries_) {
-    e.is_busy = false;
-    e.operation = AluOperation::ADD;
-    e.state = RobState::Waiting;
-    e.arch_dest_reg = 0;
-    e.physical_dest_reg = 0;
-    e.result_value = 0;
-  }
+std::optional<RobIndex> ReorderBuffer::allocate(uint32_t pc, AluOperation op, uint8_t arch_dest) {
+    if (is_full()) return std::nullopt;
+    
+    RobIndex idx = static_cast<RobIndex>(tail_ + 1);
+    entries_[tail_].state = RobState::Issued;
+    entries_[tail_].pc = pc;
+    entries_[tail_].op = op;
+    entries_[tail_].arch_dest = arch_dest;
+    entries_[tail_].has_result = false;
+    entries_[tail_].is_store = false;
+    entries_[tail_].has_exception = false;
+    
+    tail_ = (tail_ + 1) % ROB_SIZE;
+    count_++;
+    
+    return idx;
 }
 
-bool ReorderBuffer::is_full() const{
-  return entries_[tail_].is_busy;
+void ReorderBuffer::write_result(RobIndex rob_id, uint32_t value) {
+    if (rob_id == 0 || rob_id > ROB_SIZE) return;
+    size_t idx = rob_id - 1;
+    entries_[idx].has_result = true;
+    entries_[idx].result_value = value;
+    entries_[idx].state = RobState::WriteBack;
 }
 
-void ReorderBuffer::update_entry(uint8_t tag, uint32_t value) {
-    // Tag 0 is invalid (it means no entry or an error)
-    if (tag == 0) {
-        return; 
-    }
-
-    // Convert the 1-based tag back to a 0-based index
-    size_t index = static_cast<size_t>(tag - 1);
-
-    // Check if the entry is valid and is the one we're looking for
-    // (We can just check if it's busy, as the tag uniquely identifies it)
-    if (entries_[index].is_busy) 
-    {
-        // Store the result
-        entries_[index].result_value = value;
-        
-        // Mark its state as "Writeback", which means it's complete
-        // and waiting to be committed.
-        entries_[index].state = RobState::Writeback;
-    }
-    // If it's not busy, it might have been flushed due to a branch
-    // misprediction, so we can safely ignore this broadcast.
+void ReorderBuffer::prepare_store(RobIndex rob_id, uint32_t address, uint32_t data) {
+    if (rob_id == 0 || rob_id > ROB_SIZE) return;
+    size_t idx = rob_id - 1;
+    entries_[idx].is_store = true;
+    entries_[idx].store_address = address;
+    entries_[idx].store_data = data;
+    entries_[idx].state = RobState::WriteBack;
 }
 
-// Return non-zero tag on success. Tag = slot_index + 1, 0 = full/error
-uint8_t ReorderBuffer::add(RobEntry entry) {
-  if (entries_[tail_].is_busy) {
-    // full
-    return 0;
-  }
-  entries_[tail_] = entry;
-  entries_[tail_].is_busy = true;
-  uint8_t tag = static_cast<uint8_t>(tail_ + 1); // tag 0 reserved
-  tail_ = (tail_ + 1) % size_;
-  return tag;
+RobEntry* ReorderBuffer::get_head() {
+    if (count_ == 0) return nullptr;
+    return &entries_[head_];
 }
 
-void ReorderBuffer::commit(RegisterBank& registers, RegisterAliasTable& rat) {
-    RobEntry& head_entry = entries_[head_];
+RobIndex ReorderBuffer::get_head_index() const {
+    if (count_ == 0) return INVALID_ROB_INDEX;
+    return static_cast<RobIndex>(head_ + 1);
+}
 
-    // 2. Check if it's busy and has a result ready (state is Writeback)
-    if (!head_entry.is_busy || head_entry.state != RobState::Writeback) {
-        return;
+void ReorderBuffer::commit_head() {
+    if (count_ == 0) return;
+    entries_[head_].state = RobState::Invalid;
+    head_ = (head_ + 1) % ROB_SIZE;
+    count_--;
+}
+
+const RobEntry* ReorderBuffer::get_entry(RobIndex rob_id) const {
+    if (rob_id == 0 || rob_id > ROB_SIZE) return nullptr;
+    return &entries_[rob_id - 1];
+}
+
+RobEntry* ReorderBuffer::get_entry_mut(RobIndex rob_id) {
+    if (rob_id == 0 || rob_id > ROB_SIZE) return nullptr;
+    return &entries_[rob_id - 1];
+}
+
+bool ReorderBuffer::is_full() const { return count_ >= ROB_SIZE; }
+bool ReorderBuffer::is_empty() const { return count_ == 0; }
+size_t ReorderBuffer::size() const { return count_; }
+
+void ReorderBuffer::flush() {
+    for (auto& entry : entries_) {
+        entry.state = RobState::Invalid;
     }
-
-    uint8_t dest_reg = head_entry.arch_dest_reg;
-
-
-    if (dest_reg != 0) {
-        registers[dest_reg] = head_entry.result_value;
-    }
-
-    uint8_t head_tag = static_cast<uint8_t>(head_ + 1);
-    if (rat.get_tag(dest_reg) == head_tag) {
-        rat.clear_busy(dest_reg);
-    }
-
-    head_entry.is_busy = false;
-
-    head_ = (head_ + 1) % size_;
+    head_ = 0;
+    tail_ = 0;
+    count_ = 0;
 }

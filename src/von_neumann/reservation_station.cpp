@@ -1,60 +1,74 @@
 #include "von_neumann/reservation_station.hpp"
 
-ReservationStation::ReservationStation(size_t size) 
-: entries_(size)
-{
-  for (size_t i = 0; i < size; ++i) {
-      entries_[i].tag = (i + 1);
-  }
+bool ReservationStation::dispatch(const Uop& uop) {
+    for (auto& entry : entries_) {
+        if (!entry.is_busy) {
+            entry.is_busy = true;
+            entry.rob_id = uop.rob_id;
+            entry.op = uop.alu_op;
+            entry.src1 = uop.src1;
+            entry.src2 = uop.src2;
+            entry.immediate = uop.immediate;
+            entry.is_load = uop.is_load;
+            entry.is_store = uop.is_store;
+            return true;
+        }
+    }
+    return false;
 }
 
-bool ReservationStation::is_full() const 
-{
-  for (const auto& entry : entries_) {
-      if (!entry.is_busy) {
-          return false;
-      }
-  }
-  return true;
-}
-
-void ReservationStation::add(const ReservationStationEntry& entry_to_add) {
-  for (auto& internal_entry : entries_) {
-    if (!internal_entry.is_busy) {
-        // Found a free slot. Copy the data from the provided entry.
-        internal_entry.op = entry_to_add.op;
-        internal_entry.src1_is_ready = entry_to_add.src1_is_ready;
-        internal_entry.Vj = entry_to_add.Vj;
-        internal_entry.Qj = entry_to_add.Qj;
-        internal_entry.src2_is_ready = entry_to_add.src2_is_ready;
-        internal_entry.Vk = entry_to_add.Vk;
-        internal_entry.Qk = entry_to_add.Qk;
-        internal_entry.immediate = entry_to_add.immediate;
-        // ... copy any other relevant fields ...
+void ReservationStation::snoop_cdb(const CdbMessage& msg) {
+    for (auto& entry : entries_) {
+        if (!entry.is_busy) continue;
         
-        // Now, mark it as busy.
-        internal_entry.is_busy = true;
-        break;
+        if (!entry.src1.is_ready && entry.src1.producer_rob == msg.rob_id) {
+            entry.src1.is_ready = true;
+            entry.src1.value = msg.value;
+        }
+        if (!entry.src2.is_ready && entry.src2.producer_rob == msg.rob_id) {
+            entry.src2.is_ready = true;
+            entry.src2.value = msg.value;
+        }
     }
-  }
 }
 
-void ReservationStation::update_with_cdb_message(uint8_t tag, uint32_t value) 
-{
-  for (auto& entry : entries_) {
-    if (entry.is_busy) {
-      if (!entry.src1_is_ready && entry.Qj == tag) {
-          entry.Vj = value;
-          entry.src1_is_ready = true;
-      }
-      if (!entry.src2_is_ready && entry.Qk == tag) {
-          entry.Vk = value;
-          entry.src2_is_ready = true;
-      }
+std::optional<RsEntry> ReservationStation::try_issue() {
+    for (auto& entry : entries_) {
+        if (entry.is_ready()) {
+            RsEntry issued = entry;
+            entry.is_busy = false;
+            return issued;
+        }
     }
-  }
+    return std::nullopt;
 }
 
-std::vector<ReservationStationEntry>& ReservationStation::get_entries() {
-    return entries_;
+std::optional<RsEntry> ReservationStation::try_issue_oldest() {
+    RsEntry* oldest = nullptr;
+    for (auto& entry : entries_) {
+        if (entry.is_ready()) {
+            if (!oldest || entry.rob_id < oldest->rob_id) {
+                oldest = &entry;
+            }
+        }
+    }
+    if (oldest) {
+        RsEntry issued = *oldest;
+        oldest->is_busy = false;
+        return issued;
+    }
+    return std::nullopt;
+}
+
+bool ReservationStation::is_full() const {
+    for (const auto& entry : entries_) {
+        if (!entry.is_busy) return false;
+    }
+    return true;
+}
+
+void ReservationStation::flush() {
+    for (auto& entry : entries_) {
+        entry.is_busy = false;
+    }
 }

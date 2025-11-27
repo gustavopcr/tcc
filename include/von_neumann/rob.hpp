@@ -1,44 +1,34 @@
 #ifndef ROB_HPP
 #define ROB_HPP
 
-#include "von_neumann/alu.hpp"
-#include "von_neumann/register.hpp"
-#include "von_neumann/rat.hpp"
-#include <cstdint>
-#include <vector>
+#include "von_neumann/uop.hpp"
+#include <array>
+#include <optional>
 
-enum class RobState
-{
-  Waiting,
-  Executing,
-  Writeback
-};
-
-struct RobEntry{
-  bool is_busy;
-  AluOperation operation;
-  RobState state;
-  uint8_t arch_dest_reg;
-  uint8_t physical_dest_reg;
-  uint32_t result_value;
-};
-
-class ReorderBuffer
-{
+class ReorderBuffer {
 public:
-  explicit ReorderBuffer(size_t size);
-  uint8_t add(RobEntry entry); // returns tag
-  bool is_full() const;
-  void update_entry(uint8_t tag, uint32_t value);
-
-  void commit(RegisterBank& registers, RegisterAliasTable& rat);
-
+    static constexpr size_t ROB_SIZE = 16;
+    
+    ReorderBuffer() = default;
+    
+    std::optional<RobIndex> allocate(uint32_t pc, AluOperation op, uint8_t arch_dest);
+    void write_result(RobIndex rob_id, uint32_t value);
+    void prepare_store(RobIndex rob_id, uint32_t address, uint32_t data);
+    RobEntry* get_head();
+    RobIndex get_head_index() const;
+    void commit_head();
+    const RobEntry* get_entry(RobIndex rob_id) const;
+    RobEntry* get_entry_mut(RobIndex rob_id);
+    bool is_full() const;
+    bool is_empty() const;
+    size_t size() const;
+    void flush();
 
 private:
-  std::vector<RobEntry> entries_;
-  size_t head_;
-  size_t tail_;
-  size_t size_;
+    std::array<RobEntry, ROB_SIZE> entries_{};
+    size_t head_ = 0;
+    size_t tail_ = 0;
+    size_t count_ = 0;
 };
 
 #endif

@@ -15,7 +15,7 @@ class Dataflow
 {
 public:
   Dataflow();
-  void Dataflow::run(const std::vector<uint64_t>& initial_data_values);
+  void run(const std::vector<uint64_t>& initial_data_values);
 
   void load_program(std::string_view graph_file);
   void set_inputs(const std::vector<uint64_t>& input_data);
