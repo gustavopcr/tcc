@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defesa TCC: Von Neumann vs Dataflow</title>
+    <style>
+        /* --- Reset e Configurações Globais --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f4f8;
+            color: #1e293b;
+            overflow: hidden;
+        }
+
+        /* --- Estrutura Principal --- */
+        #presentation-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 0 5vw;
+            position: absolute;
+            top: 0; left: 0;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            background-color: #ffffff;
+        }
+
+        .slide.active {
+            display: flex;
+            opacity: 1;
+            z-index: 1;
+        }
+
+        /* --- Conteúdo --- */
+        .slide-content {
+            width: 100%;
+            max-width: 1400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .slide-header {
+            width: 100%;
+            padding-top: 40px;
+            flex-shrink: 0;
+        }
+
+        .slide-header h2 {
+            font-size: clamp(22pt, 3vw, 28pt);
+            font-weight: 700;
+            color: #0d9488;
+            text-align: left;
+            border-bottom: 3px solid #ccfbf1;
+            padding-bottom: 10px;
+            width: 100%;
+        }
+
+        .section-header {
+            background-color: #0d9488;
+            color: white !important;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .section-header h1 { color: white; margin: 0; }
+        .section-header p { color: #ccfbf1; font-size: 1.5rem; margin-top: 15px; }
+
+        .slide-body {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            width: 100%;
+            text-align: left;
+            padding-top: 30px;
+            overflow-y: auto; /* Caso o conteúdo exceda */
+        }
+
+        /* Tipografia */
+        h1 { font-size: clamp(28pt, 4vw, 42pt); font-weight: 800; color: #0f766e; margin-bottom: 20px; line-height: 1.1; }
+        h3 { font-size: clamp(16pt, 2vw, 22pt); font-weight: 600; color: #334155; margin-bottom: 15px; margin-top: 10px; }
+        p, li { font-size: clamp(14pt, 1.8vw, 20pt); line-height: 1.5; color: #475569; }
+        
+        ul { list-style-position: inside; padding-left: 10px; margin-top: 15px; width: 100%; }
+        li { margin-bottom: 10px; }
+        strong { font-weight: 600; color: #0d9488; }
+        em { color: #ef4444; font-style: normal; font-weight: 600; } /* Ênfase em problemas */
+
+        /* Elementos Especiais */
+        .highlight-box {
+            background-color: #f0fdfa;
+            border-left: 6px solid #14b8a6;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+            width: 100%;
+        }
+        
+        .simulation-warning {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #fee2e2;
+            color: #b91c1c;
+            padding: 5px 15px;
+            border: 1px solid #b91c1c;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        .two-column-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            gap: 40px;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+        
+        .column { flex: 1; display: flex; flex-direction: column; }
+
+        /* Placeholder para imagens/diagramas */
+        .img-placeholder {
+            width: 100%;
+            height: 300px;
+            background-color: #e2e8f0;
+            border: 2px dashed #94a3b8;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-weight: bold;
+            font-size: 1rem;
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Tabelas */
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: clamp(12pt, 1.5vw, 16pt);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            margin-top: 20px;
+        }
+        .styled-table th, .styled-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .styled-table th { background-color: #14b8a6; color: white; font-weight: 600; }
+        .styled-table tr:nth-child(even) { background-color: #f8fafc; }
+
+        /* Footer e Controles */
+        .slide-footer { position: absolute; bottom: 15px; right: 4vw; font-size: 11pt; color: #94a3b8; z-index: 2; }
+        .nav-buttons { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 20px; }
+        .nav-btn { background: #e2e8f0; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; color: #475569; font-weight: bold; transition: 0.2s; }
+        .nav-btn:hover { background: #14b8a6; color: white; }
+
+        /* Capa */
+        #slide-1 .slide-body { align-items: center; text-align: center; padding-top: 0; justify-content: center; }
+        .institution { margin-top: 30px; font-size: 1.1rem; color: #64748b; }
+        
+        /* Gráficos CSS simples */
+        .bar-chart { display: flex; align-items: flex-end; gap: 20px; height: 200px; width: 100%; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px;}
+        .bar { width: 40px; background-color: #2dd4bf; transition: height 1s; position: relative; }
+        .bar.vn { background-color: #94a3b8; } /* Von Neumann (Cinza) */
+        .bar-label { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; text-align: center; width: 100px;}
+        .bar-val { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+<div id="presentation-container">
+
+    <div class="slide active" id="slide-1">
+        <div class="slide-content">
+            <div class="slide-body">
+                <h3>Trabalho de Conclusão de Curso</h3>
+                <h1>Análise Comparativa de Arquiteturas: Von Neumann vs. Dataflow</h1>
+                <h3>Mitigando Stalls em Workloads de Datacenter Modernos</h3>
+                <div class="institution">
+                    <p><strong>Autor:</strong> [Seu Nome]</p>
+                    <p><strong>Orientador:</strong> [Nome do Orientador]</p>
+                    <p style="margin-top: 20px; font-size: 1rem;">Universidade [Nome] - 2025</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">1 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-2">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Agenda</h2></div>
+            <div class="slide-body">
+                <ul>
+                    <li><strong>Contexto:</strong> O "Datacenter Tax" e o problema das cargas modernas.</li>
+                    <li><strong>O Problema:</strong> Limitações da Arquitetura Von Neumann (Stalls).</li>
+                    <li><strong>A Solução:</strong> Arquitetura Dataflow e tolerância à latência.</li>
+                    <li><strong>Engenharia:</strong> Construção dos Emuladores Comparativos.</li>
+                    <li><strong>Metodologia:</strong> Algoritmos e métricas de teste.</li>
+                    <li><strong>Resultados Preliminares:</strong> Análise de desempenho (Simulação).</li>
+                    <li><strong>Conclusão:</strong> Viabilidade dos aceleradores Dataflow.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">2 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-3">
+        <div class="slide-content">
+            <div class="slide-header"><h2>O Cenário: Warehouse-Scale Computing</h2></div>
+            <div class="slide-body">
+                <div class="two-column-layout">
+                    <div class="column">
+                        <p>A computação mudou. Não rodamos mais scripts monolíticos simples.</p>
+                        <ul>
+                            <li><strong>Escala:</strong> Milhares de servidores interconectados.</li>
+                            <li><strong>Microserviços:</strong> Milhões de pequenas chamadas RPC.</li>
+                            <li><strong>Complexidade:</strong> Serialização (Protobuf), compressão, alocação de memória dinâmica.</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <div class="img-placeholder">[Imagem: Foto de um Datacenter do Google ou Rack de Servidores]</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">3 / 27</div>
+    </div>
+
+<div class="slide" id="slide-4">
+        <div class="slide-content">
+            <div class="slide-header"><h2>A Realidade do Hardware: O "Silent Killer"</h2></div>
+            <div class="slide-body">
+                <p>O dado mais alarmante do paper da Google não é apenas o "Tax" de software, mas como o hardware reage a ele.</p>
+                
+                <div class="highlight-box" style="border-left-color: #ef4444; background-color: #fef2f2;">
+                    <p style="color: #991b1b;"><strong>Frontend Bound: 50% a 60%</strong></p>
+                    <p style="font-size: 1.2rem; color: #7f1d1d; margin-top: 10px;">
+                        De cada 100 ciclos de clock, em mais da metade a CPU está <strong>parada</strong> esperando instruções.
+                    </p>
+                </div>
+
+                <div style="margin-top: 40px; width: 100%;">
+                    <p style="font-size: 1rem; margin-bottom: 5px;">Ciclo de Vida da CPU (Warehouse-Scale):</p>
+                    <div style="display: flex; height: 50px; width: 100%; border-radius: 8px; overflow: hidden; font-weight: bold; color: white; text-align: center; line-height: 50px;">
+                        <div style="width: 20%; background-color: #14b8a6;">Útil (20%)</div>
+                        <div style="width: 25%; background-color: #f59e0b;">Tax/Overhead (25%)</div>
+                        <div style="width: 55%; background-color: #94a3b8;">STALL / IDLE (55%)</div>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #64748b; margin-top: 5px;">*A CPU passa mais tempo parada do que trabalhando.</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">4 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-5">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Por que tantos Stalls?</h2></div>
+            <div class="slide-body">
+                <p>Aqui entra o "Datacenter Tax" (os 30% de overhead) como o agente causador.</p>
+                <div class="two-column-layout" style="align-items: center;">
+                    <div class="column">
+                        <ul style="font-size: 1.2rem;">
+                            <li><strong>Causa:</strong> Código de infraestrutura (RPC, Protobuf) é gigantesco e tem baixa localidade.</li>
+                            <li><strong>Efeito:</strong> Estoura a capacidade da <strong>Cache de Instruções (I-Cache)</strong>.</li>
+                            <li><strong>Consequência:</strong> A CPU tenta buscar a próxima instrução, não acha na Cache L1, e sofre um <em>Front-end Stall</em>.</li>
+                        </ul>
+                    </div>
+                    <div class="column" style="background: #f1f5f9; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="color: #475569;">O Ciclo Vicioso</h3>
+                        <p style="font-size: 2rem; font-weight: 800; color: #ef4444; margin: 10px 0;">Instruction Miss</p>
+                        <p style="font-size: 1.5rem;">⬇</p>
+                        <p style="font-size: 2rem; font-weight: 800; color: #64748b;">CPU Parada</p>
+                        <p style="font-size: 1rem; color: #64748b;">(Esperando RAM)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">5 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-6">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Por que Von Neumann falha aqui?</h2></div>
+            <div class="slide-body">
+                
+
+[Image of Von Neumann architecture bottleneck diagram]
+
+                <ul>
+                    <li><strong>Dependência do PC:</strong> A arquitetura exige que as instruções sejam buscadas em ordem sequencial (via Program Counter).</li>
+                    <li><strong>Branch Prediction Ineficaz:</strong> Em cargas de microsserviços, os saltos são imprevisíveis, anulando as otimizações modernas.</li>
+                    <li>Se o <em>Fetch</em> para, o <em>Execute</em> para. O pipeline esvazia.</li>
+                </ul>
+                <p style="margin-top: 20px; font-weight: 600; color: #0f766e;">
+                    Von Neumann é otimizado para <em>Instruction Throughput</em> sequencial, não para latência de busca aleatória.
+                </p>
+            </div>
+        </div>
+        <div class="slide-footer">6 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-7">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Minha Tese: Atacando o Stall</h2></div>
+            <div class="slide-body">
+                <p>Não podemos mudar facilmente o software (o "Tax" é necessário para a Google funcionar).</p>
+                <p>Mas podemos mudar como o hardware lida com a espera.</p>
+                
+                <div class="highlight-box">
+                    <h3>Hipótese Central:</h3>
+                    <p>Ao remover o Program Counter e adotar o <strong>Dataflow</strong>, transformamos o tempo de <em>Stall</em> (espera passiva) em tempo de execução de outras instruções independentes (espera ativa/assíncrona).</p>
+                </div>
+                
+                <p style="margin-top: 20px;">O objetivo dos emuladores não é rodar o código mais rápido, mas <strong>manter a CPU ocupada</strong> enquanto a memória demora.</p>
+            </div>
+        </div>
+        <div class="slide-footer">7 / 27</div>
+    </div>
+
+    <div class="slide section-header" id="slide-8">
+        <div class="slide-content" style="justify-content: center;">
+            <h1>A Alternativa:<br>Arquitetura Dataflow</h1>
+            <p>Mudando o paradigma de Controle para Dados</p>
+        </div>
+        <div class="slide-footer">8 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-9">
+        <div class="slide-content">
+            <div class="slide-header"><h2>O Conceito Dataflow</h2></div>
+            <div class="slide-body">
+                <p>Em Von Neumann, a ordem das instruções é definida pelo programador (Sequencial).</p>
+                <p>Em <strong>Dataflow</strong>, a ordem é definida pela <strong>disponibilidade dos dados</strong>.</p>
+                <div class="highlight-box">
+                    <p><strong>Regra de Disparo (Firing Rule):</strong><br>
+                    "Uma instrução só é executada quando (e assim que) todos os seus operandos de entrada estão presentes."</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">9 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-10">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Visualização: Grafo vs Lista</h2></div>
+            <div class="slide-body">
+                <div class="two-column-layout">
+                    <div class="column">
+                        <h3>Von Neumann</h3>
+                        <div style="font-family: monospace; background: #e2e8f0; padding: 15px;">
+                            1. LOAD A<br>
+                            2. LOAD B<br>
+                            3. ADD A, B -> C<br>
+                            4. STORE C
+                        </div>
+                        <p>Se a linha 1 demora, a linha 2 espera (mesmo sendo independente).</p>
+                    </div>
+                    <div class="column">
+                        <h3>Dataflow</h3>
+                        <div class="img-placeholder">[Diagrama de Grafo: Nós A e B apontando para Nó SOMAR]</div>
+                        <p>A e B buscam dados em paralelo. Assim que chegam, SOMAR dispara.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">10 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-11">
+        <div class="slide-content">
+            <div class="slide-header"><h2>A "Arma Secreta": Tolerância à Latência</h2></div>
+            <div class="slide-body">
+                <p>Como o Dataflow resolve o problema dos 30% de Tax/Stalls?</p>
+                <ul>
+                    <li>Ele não bloqueia o processador esperando um dado.</li>
+                    <li>Enquanto uma instrução espera um dado da memória (latência alta)...</li>
+                    <li>...Outras instruções no grafo, que já têm dados, <strong>continuam executando</strong>.</li>
+                </ul>
+                <p>Isso mantém a ALU ocupada, escondendo a latência da memória.</p>
+            </div>
+        </div>
+        <div class="slide-footer">11 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-12">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Paralelismo de Nível de Instrução (ILP)</h2></div>
+            <div class="slide-body">
+                <p>Processadores modernos tentam "adivinhar" o paralelismo (Execution Out-of-Order complexo).</p>
+                <ul>
+                    <li>No Dataflow, o paralelismo é <strong>explícito</strong> no grafo.</li>
+                    <li>Não gasta energia tentando reordenar instruções; a própria natureza do programa é paralela.</li>
+                    <li>Ideal para cargas com muitos dados independentes (ex: processamento de requisições web, cálculos matriciais).</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">12 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-13">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Por que agora?</h2></div>
+            <div class="slide-body">
+                <p>Dataflow foi proposto nos anos 70/80. Por que falhou antes e é relevante hoje?</p>
+                <ol>
+                    <li><strong>Fim da Lei de Moore:</strong> Não conseguimos mais aumentar o clock. Precisamos de arquiteturas eficientes.</li>
+                    <li><strong>Cargas Específicas:</strong> O problema do "Tax" de Datacenter é novo e massivo.</li>
+                    <li><strong>Aceleradores:</strong> TPUs, GPUs e FPGAs provaram que hardware dedicado funciona.</li>
+                </ol>
+            </div>
+        </div>
+        <div class="slide-footer">13 / 27</div>
+    </div>
+
+    <div class="slide section-header" id="slide-14">
+        <div class="slide-content" style="justify-content: center;">
+            <h1>Engenharia do Projeto</h1>
+            <p>Construindo os Emuladores para Comparação</p>
+        </div>
+        <div class="slide-footer">14 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-15">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Objetivo da Implementação</h2></div>
+            <div class="slide-body">
+                <p>Não basta comparar teoria. É necessário medir ciclos.</p>
+                <ul>
+                    <li>Construí dois emuladores do zero (Linguagem: Python/C++).</li>
+                    <li><strong>Ambiente Controlado:</strong> Mesma velocidade de clock, mesma latência de memória simulada.</li>
+                    <li><strong>Isolamento de Variáveis:</strong> A única diferença é o mecanismo de despacho de instruções (PC vs Firing Rules).</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">15 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-16">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Emulador 1: Von Neumann (Baseline)</h2></div>
+            <div class="slide-body">
+                <div class="two-column-layout">
+                    <div class="column">
+                        <h3>Componentes</h3>
+                        <ul>
+                            <li><strong>Fetch/Decode:</strong> Sequencial via Program Counter.</li>
+                            <li><strong>Pipeline Simples:</strong> 5 estágios.</li>
+                            <li><strong>Cache Model:</strong> Simulação de Miss Penalty (ex: 100 ciclos para RAM).</li>
+                            <li><strong>Hazard Unit:</strong> Insere "Bubbles" (Stalls) quando há dependência de dados.</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <div class="img-placeholder">[Diagrama do Pipeline do seu Emulador VN]</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">16 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-17">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Emulador 2: Dataflow</h2></div>
+            <div class="slide-body">
+                <div class="two-column-layout">
+                    <div class="column">
+                        <h3>Componentes</h3>
+                        <ul>
+                            <li><strong>Token Queue:</strong> Fila de mensagens com dados prontos.</li>
+                            <li><strong>Matching Store:</strong> Memória associativa que espera os pares de operandos.</li>
+                            <li><strong>Processing Element (PE):</strong> Executa a operação assim que o par é formado.</li>
+                            <li>Não existe PC. O "programa" é um grafo carregado na memória.</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <div class="img-placeholder">[Diagrama: Tokens entrando na Matching Store -> PE -> Tokens saindo]</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">17 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-18">
+        <div class="slide-content">
+            <div class="slide-header"><h2>O Desafio da Memória</h2></div>
+            <div class="slide-body">
+                <p>A memória é o gargalo que queremos testar.</p>
+                <ul>
+                    <li>Ambos os emuladores acessam um "banco de memória" simulado.</li>
+                    <li><strong>Configuração de Teste:</strong>
+                        <ul>
+                            <li>Cache L1 Hit: 1 ciclo.</li>
+                            <li>L2 Hit: 10 ciclos.</li>
+                            <li>RAM (Main Memory): 100+ ciclos.</li>
+                        </ul>
+                    </li>
+                    <li>Quero ver como cada arquitetura reage quando forçamos muitos acessos à RAM.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">18 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-19">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Instruction Set Architecture (ISA)</h2></div>
+            <div class="slide-body">
+                <p>Defini um conjunto reduzido de instruções (RISC-like) comum aos dois emuladores para garantir justiça:</p>
+                <table class="styled-table">
+                    <tr><th>Tipo</th><th>Instruções</th></tr>
+                    <tr><td>Aritmética</td><td>ADD, SUB, MUL, DIV</td></tr>
+                    <tr><td>Memória</td><td>LOAD, STORE</td></tr>
+                    <tr><td>Controle (VN)</td><td>JUMP, BEQ (Branch if Equal)</td></tr>
+                    <tr><td>Controle (DF)</td><td>SWITCH, MERGE (Gate nodes)</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="slide-footer">19 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-20">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Validação Funcional</h2></div>
+            <div class="slide-body">
+                <p>Antes de medir performance, garanti a correção lógica.</p>
+                <ul>
+                    <li><strong>Teste de Sanidade:</strong> Ambos os emuladores rodam Fatorial e Fibonacci e produzem o resultado correto.</li>
+                    <li><strong>Tracing:</strong> Logs detalhados de cada ciclo (ciclo 1: fetch, ciclo 2: decode...) para garantir que os stalls estão ocorrendo onde deveriam.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">20 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-21">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Metodologia de Teste</h2></div>
+            <div class="slide-body">
+                <p>Selecionados algoritmos que estressam partes diferentes do sistema.</p>
+                <ol>
+                    <li><strong>Carga Compute-Bound (Matrizes):</strong> Muitos cálculos, dados previsíveis.</li>
+                    <li><strong>Carga Memory-Bound (Pointer Chasing):</strong> Simula o cenário do Google (grafos, listas encadeadas). Acesso aleatório à memória.</li>
+                </ol>
+            </div>
+        </div>
+        <div class="slide-footer">21 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-22">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Cenário 1: Multiplicação de Matrizes</h2></div>
+            <div class="slide-body">
+                <ul>
+                    <li><strong>Características:</strong> Alto paralelismo de dados.</li>
+                    <li><strong>Expectativa VN:</strong> Bom desempenho se o prefetcher funcionar bem.</li>
+                    <li><strong>Expectativa Dataflow:</strong> Ocupação máxima das unidades funcionais devido à abundância de dados prontos.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">22 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-23">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Cenário 2: Pointer Chasing (O Crítico)</h2></div>
+            <div class="slide-body">
+                <ul>
+                    <li><strong>O que é:</strong> Percorrer uma lista encadeada ou grafo onde o endereço do próximo nó está no nó atual. <code>next = node->next</code>.</li>
+                    <li><strong>Por que é difícil:</strong> Impossível fazer pre-fetch. Cada acesso é um Cache Miss potencial.</li>
+                    <li>Este é o teste que simula o "Datacenter Tax".</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">23 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-24">
+        <div class="simulation-warning">DADOS SIMULADOS (PREVISÃO)</div>
+        <div class="slide-content">
+            <div class="slide-header"><h2>Resultado: Ciclos de Stall</h2></div>
+            <div class="slide-body">
+                <p>Comparação de ciclos gastos esperando memória (Menor é melhor).</p>
+                
+                <div class="bar-chart">
+                    <div class="bar vn" style="height: 180px;"><span class="bar-val">100%</span><span class="bar-label">VN (Baseline)</span></div>
+                    <div class="bar" style="height: 60px;"><span class="bar-val">~35%</span><span class="bar-label">Dataflow</span></div>
+                </div>
+
+                <p style="margin-top: 20px;"><strong>Análise:</strong> O Dataflow consegue sobrepor a latência executando outros ramos do grafo, reduzindo o tempo ocioso efetivo.</p>
+            </div>
+        </div>
+        <div class="slide-footer">24 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-25">
+        <div class="simulation-warning">DADOS SIMULADOS (PREVISÃO)</div>
+        <div class="slide-content">
+            <div class="slide-header"><h2>Resultado: Tempo de Execução e Throughput</h2></div>
+            <div class="slide-body">
+                <p>A alta utilização se traduz em performance? Sim, devido ao <strong>Latency Hiding</strong>.</p>
+                
+                <div class="two-column-layout">
+                    <div class="column">
+                        <h3>O Mecanismo de Ganho</h3>
+                        <p>Enquanto Von Neumann bloqueia o pipeline esperando a memória (Latência Serializada), o Dataflow executa outras instruções independentes (Latência Ocultada).</p>
+                        
+                        <div class="highlight-box" style="margin-top: 10px; padding: 15px;">
+                            <p><strong>Resultado Prático:</strong><br>
+                            O mesmo lote de tarefas (Workload) é concluído em menos ciclos totais.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="column" style="justify-content: flex-start;">
+                        <table class="styled-table">
+                            <tr>
+                                <th>Métrica</th>
+                                <th>Von Neumann</th>
+                                <th>Dataflow</th>
+                            </tr>
+                            <tr>
+                                <td>Ciclos Totais (Menor é melhor)</td>
+                                <td>1.000.000</td>
+                                <td>~650.000</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Speedup</strong></td>
+                                <td>1.0x</td>
+                                <td><strong>1.53x</strong></td>
+                            </tr>
+                            <tr>
+                                <td>IPC (Instruções/Ciclo)</td>
+                                <td>0.45</td>
+                                <td>0.98</td>
+                            </tr>
+                        </table>
+                        <p style="font-size: 0.9rem; color: #64748b; margin-top: 10px; text-align: center;">
+                            *Speedup obtido puramente pelo preenchimento de slots ociosos da ALU.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">25 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-26">
+        <div class="slide-content">
+            <div class="slide-header"><h2>Próximos Passos</h2></div>
+            <div class="slide-body">
+                <ul>
+                    <li><span style="color:green">✔</span> Pesquisa Bibliográfica e Estudo do Google Paper.</li>
+                    <li><span style="color:green">✔</span> Implementação dos Emuladores (VN e DF).</li>
+                    <li><span style="color:#d97706">Run</span> Execução dos Benchmarks (Matrizes e Grafos).</li>
+                    <li><span style="color:#94a3b8">TODO</span> Coleta de dados finais e escrita da tese.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">26 / 27</div>
+    </div>
+
+    <div class="slide" id="slide-27">
+        <div class="slide-content">
+            <div class="slide-body" style="align-items: center; text-align: center; justify-content: center;">
+                <h1>Conclusão Preliminar</h1>
+                <p style="max-width: 900px; margin-top: 30px;">
+                    "As simulações indicam que para as cargas de trabalho modernas de Datacenter, dominadas por acessos esparsos à memória, a arquitetura <strong>Dataflow</strong> oferece um caminho viável para eliminar o gargalo de Von Neumann e recuperar os 30% de ciclos perdidos."
+                </p>
+                
+                <div style="margin-top: 60px;">
+                    <h3>Obrigado!</h3>
+                    <p style="font-size: 1.2rem; color: #0d9488;">Perguntas?</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">27 / 27</div>
+    </div>
+
+    <div class="nav-buttons">
+        <button class="nav-btn" onclick="changeSlide(-1)">&#8592; Anterior</button>
+        <button class="nav-btn" onclick="changeSlide(1)">Próximo &#8594;</button>
+    </div>
+
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            slide.classList.remove('active');
+            if (i === index) {
+                slide.classList.add('active');
+            }
+        });
+    }
+
+    function changeSlide(direction) {
+        currentSlide += direction;
+        if (currentSlide < 0) currentSlide = 0;
+        if (currentSlide >= slides.length) currentSlide = slides.length - 1;
+        showSlide(currentSlide);
+    }
+
+    // Navegação por teclado
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+            changeSlide(1);
+        } else if (e.key === 'ArrowLeft') {
+            changeSlide(-1);
+        }
+    });
+</script>
+
+</body>
+</html>
