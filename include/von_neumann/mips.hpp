@@ -83,6 +83,8 @@ private:
     bool halted_ = false;
     MipsStats stats_;
     MipsConfig config_;
+
+    uint32_t cycles_since_flush_ = 10;
 };
 
 #endif

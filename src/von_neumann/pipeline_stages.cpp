@@ -1,6 +1,6 @@
 #include "von_neumann/pipeline_stages.hpp"
 #include "von_neumann/decoder.hpp"
-
+#include <iostream>
 // ============================================================================
 // FetchStage
 // ============================================================================
@@ -15,28 +15,36 @@ void FetchStage::tick() {
     if (stalled_) return;
     if (out_buffer_.is_full()) return;
 
-    // Request instruction from memory bus
-    mem_bus_.request_fetch(pc_);
-    
-    // Check if we got a response (might be blocked by data access)
-    auto response = mem_bus_.get_fetch_response();
-    if (!response.valid) {
-        // Memory bus denied our request (data access has priority)
-        waiting_for_memory_ = true;
-        return;
+    // If we were waiting for memory, check for response first
+    if (waiting_for_memory_) {
+        auto response = mem_bus_.get_fetch_response();
+        if (!response.valid) {
+            // Still waiting - keep the pending request
+            return;
+        }
+        
+        waiting_for_memory_ = false;
+        
+        uint32_t instruction = response.data;
+        if (instruction == 0) {
+            // End of program marker - stop fetching
+            stalled_ = true;
+            return;
+        }
+        
+        out_buffer_.instructions.push_back(instruction);
+        out_buffer_.pcs.push_back(pending_pc_);  // Use the PC we requested
+        pc_ = pending_pc_ + 4;  // Move to next instruction
     }
     
-    waiting_for_memory_ = false;
-    
-    uint32_t instruction = response.data;
-    if (instruction == 0) return;  // NOP or end of program
-    
-    out_buffer_.instructions.push_back(instruction);
-    out_buffer_.pcs.push_back(pc_);
-    
-    // Always-Not-Taken: PC += 4 (never predict taken)
-    pc_ += 4;
+    // Issue new fetch request for current PC
+    if (!waiting_for_memory_ && !out_buffer_.is_full()) {
+        mem_bus_.request_fetch(pc_);
+        pending_pc_ = pc_;
+        waiting_for_memory_ = true;
+    }
 }
+
 
 void FetchStage::stall() {
     stalled_ = true;
@@ -48,7 +56,9 @@ void FetchStage::unstall() {
 
 void FetchStage::flush_and_redirect(uint32_t new_pc) {
     pc_ = new_pc;
+    pending_pc_ = new_pc;
     waiting_for_memory_ = false;
+    stalled_ = false;
     // Note: buffers are flushed by the caller
 }
 
@@ -94,6 +104,10 @@ void DecodeStage::tick() {
             default: uop.alu_op = AluOperation::ADD; break;
         }
         uop.arch_dest = uop.decoded.rd;
+          if (funct == 0x00 || funct == 0x02) {  // SLL or SRL
+            uop.is_shift = true;  // Mark as shift instruction
+            uop.immediate = uop.decoded.shamt;  // Shift amount from shamt field
+        }
     }
     // I-type ALU (ADDI, ANDI, ORI, etc.)
     else if (opcode == 0x08 || opcode == 0x09) {  // ADDI, ADDIU
@@ -137,17 +151,16 @@ void DecodeStage::tick() {
         uop.immediate = static_cast<int16_t>(uop.decoded.immediate);
         uop.arch_dest = 0;  // Stores don't write to register
     }
-    // Branch instructions
     else if (opcode == 0x04) {  // BEQ
         uop.is_branch = true;
-        uop.alu_op = AluOperation::SUB;  // Compare via subtraction
-        uop.immediate = static_cast<int16_t>(uop.decoded.immediate) << 2;  // Branch offset
-        uop.arch_dest = 0;  // Branches don't write to register
+        uop.alu_op = AluOperation::BEQ;  // Use dedicated BEQ operation
+        uop.immediate = static_cast<int16_t>(uop.decoded.immediate);  // Don't shift here
+        uop.arch_dest = 0;
     }
     else if (opcode == 0x05) {  // BNE
         uop.is_branch = true;
-        uop.alu_op = AluOperation::SUB;
-        uop.immediate = static_cast<int16_t>(uop.decoded.immediate) << 2;
+        uop.alu_op = AluOperation::BNE;  // Use dedicated BNE operation
+        uop.immediate = static_cast<int16_t>(uop.decoded.immediate);  // Don't shift here
         uop.arch_dest = 0;
     }
     
@@ -205,7 +218,7 @@ void DispatchStage::tick() {
     if (rob_.is_full()) return;
     
     const Uop& uop = in_buffer_.uops.front();
-    
+
     // Select appropriate reservation station
     ReservationStation& target_rs = (uop.is_load || uop.is_store) ? mem_rs_ : alu_rs_;
     
@@ -229,23 +242,34 @@ void DispatchStage::tick() {
     rob_entry->is_load = uop.is_load;
     rob_entry->is_branch = uop.is_branch;
     
-    // Update RAT if instruction writes to a register
-    if (uop.arch_dest != 0) {
-        rat_.set_mapping(uop.arch_dest, rob_id);
-    }
-    
-    // Rename source operands
+    // *** RENAME SOURCE OPERANDS FIRST - BEFORE UPDATING RAT! ***
     Operand src1 = rename_source(uop.decoded.rs);
     Operand src2{};
     
-    if (uop.decoded.op == 0) {  // R-type: second source is rt
+    bool is_shift = (uop.decoded.op == 0) && 
+                    (uop.decoded.funct == 0x00 || uop.decoded.funct == 0x02);
+    
+    if (is_shift) {
+        // Shift instructions: src1 = rt (value to shift), src2 = shamt (shift amount)
+        src1 = rename_source(uop.decoded.rt);
+        src2 = Operand::ready(uop.decoded.shamt);  // Shift amount is immediate
+    } else if (uop.decoded.op == 0) {  // Other R-type: both rs and rt are sources
+        src1 = rename_source(uop.decoded.rs);
         src2 = rename_source(uop.decoded.rt);
-    } else if (uop.is_store) {  // Store: rt is the data to store
+    } else if (uop.is_store) {  // Store: rs is base, rt is data
+        src1 = rename_source(uop.decoded.rs);
         src2 = rename_source(uop.decoded.rt);
     } else if (uop.is_branch) {  // Branch: compare rs and rt
+        src1 = rename_source(uop.decoded.rs);
         src2 = rename_source(uop.decoded.rt);
-    } else {  // I-type with immediate
+    } else {  // I-type with immediate: rs is source
+        src1 = rename_source(uop.decoded.rs);
         src2 = Operand::ready(0);  // Immediate handled separately
+    }
+    
+    // *** NOW update RAT - AFTER reading sources ***
+    if (uop.arch_dest != 0) {
+        rat_.set_mapping(uop.arch_dest, rob_id);
     }
     
     // Allocate RS entry
@@ -296,7 +320,14 @@ void IssueStage::tick() {
             inst.rob_id = entry.rob_id;
             inst.op = entry.op;
             inst.src1_val = entry.src1.value;
-            inst.src2_val = entry.src2.value;
+            bool is_shift = (entry.op == AluOperation::SLL || entry.op == AluOperation::SRL);
+            if (entry.is_branch) {
+                inst.src2_val = entry.src2.value;  // Raw value for comparison
+            } else if (is_shift) {
+                inst.src2_val = entry.src2.value;  // Shift amount already in src2
+            } else {
+                inst.src2_val = entry.src2.value + entry.immediate;  // Combined for ALU
+            }
             inst.immediate = entry.immediate;
             inst.pc = entry.pc;
             inst.is_branch = entry.is_branch;
@@ -309,7 +340,7 @@ void IssueStage::tick() {
     // Try to issue from Memory RS
     if (!mem_eu_.is_busy()) {
         auto ready_idx = mem_rs_.find_ready();
-        if (ready_idx) {
+        if (ready_idx) {        
             RsEntry entry = mem_rs_.get_entry(*ready_idx);
             mem_rs_.deallocate(*ready_idx);
             
@@ -327,7 +358,6 @@ void IssueStage::tick() {
         }
     }
 }
-
 void IssueStage::flush() {
     // Reservation stations cleared by caller
 }

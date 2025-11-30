@@ -50,10 +50,14 @@ ExecutionResult ExecutionUnit::compute_result(const ExecutingInst& inst) {
         bool condition = false;
         
         switch (inst.op) {
-            case AluOperation::SUB:  // BEQ uses subtraction
+            case AluOperation::BEQ:
+            case AluOperation::SUB:  // Fallback for compatibility
                 condition = (inst.src1_val == inst.src2_val);
                 break;
-            case AluOperation::SLT:  // BLT
+            case AluOperation::BNE:
+                condition = (inst.src1_val != inst.src2_val);
+                break;
+            case AluOperation::SLT:
                 condition = (static_cast<int32_t>(inst.src1_val) < 
                             static_cast<int32_t>(inst.src2_val));
                 break;
@@ -63,10 +67,10 @@ ExecutionResult ExecutionUnit::compute_result(const ExecutingInst& inst) {
         }
         
         result.branch_taken = condition;
-        // Branch target = PC + 4 + (immediate << 2) for taken branches
+        // Branch target = PC + 4 + (immediate << 2)
+        // Immediate is the raw offset from instruction, shift here
         result.branch_target = inst.pc + 4 + (inst.immediate << 2);
         result.value = condition ? 1 : 0;
-        
     } else {
         // Regular ALU operation
         result.value = alu(inst.op, inst.src1_val, inst.src2_val);

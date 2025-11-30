@@ -26,10 +26,10 @@ uint32_t alu(AluOperation op, uint32_t rs, uint32_t rt)
       return ~(rs | rt);
 
     case AluOperation::SLL:
-      return rt << rs;  // rt shifted left by rs (shamt goes in rs for R-type)
+      return rs << rt;  // rs (value) shifted left by rt (shift amount)
 
     case AluOperation::SRL:
-      return rt >> rs;  // rt shifted right by rs (shamt goes in rs for R-type)
+      return rs >> rt;  // rs (value) shifted right by rt (shift amount)
     
     default:
       return 0; 

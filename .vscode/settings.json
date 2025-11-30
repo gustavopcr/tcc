@@ -71,6 +71,10 @@
       "typeinfo": "cpp",
       "variant": "cpp",
       "cfenv": "cpp",
-      "valarray": "cpp"
+      "valarray": "cpp",
+      "bitset": "cpp",
+      "forward_list": "cpp",
+      "set": "cpp",
+      "unordered_set": "cpp"
     }
 }

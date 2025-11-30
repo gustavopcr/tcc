@@ -40,6 +40,7 @@ struct Uop {
     std::optional<uint32_t> result{};
     bool is_load = false;
     bool is_store = false;
+    bool is_shift = false;
     bool is_branch = false;           // NEW: branch flag
     bool branch_taken = false;        // NEW: actual branch outcome
     uint32_t branch_target = 0;       // NEW: computed branch target

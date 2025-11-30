@@ -70,6 +70,11 @@ void Mips::tick() {
     stats_.data_stalls = mem_bus_.get_data_stall_cycles();
     stats_.memory_accesses = mem_bus_.get_total_accesses();
     
+    if(stats_.cycles < 10) return;
+    if (cycles_since_flush_ < 10) {
+        cycles_since_flush_++;
+        return;
+    }
     // Check for halt condition (no more work)
     if (fetch_buffer_.instructions.empty() &&
         decode_buffer_.uops.empty() &&
@@ -90,6 +95,7 @@ void Mips::handle_misprediction(uint32_t target_pc) {
     stats_.branch_mispredictions++;
     flush_pipeline();
     fetch_stage_->flush_and_redirect(target_pc);
+    cycles_since_flush_ = 0;
 }
 
 void Mips::flush_pipeline() {

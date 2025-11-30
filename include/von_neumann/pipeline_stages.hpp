@@ -28,6 +28,7 @@ private:
     MemoryBus& mem_bus_;
     FetchBuffer& out_buffer_;
     uint32_t pc_;
+    uint32_t pending_pc_;  // NEW: PC of the pending fetch request
     bool stalled_ = false;
     bool waiting_for_memory_ = false;  // NEW: track if we're waiting
 };
