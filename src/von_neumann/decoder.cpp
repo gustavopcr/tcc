@@ -22,22 +22,22 @@ Instruction decode(uint32_t instruction)
     return inst;
 }
 
-AluOperation get_alu_operation(uint8_t opcode, uint8_t funct) {
-    if (opcode == 0x00) { // R-type
-        switch (funct) {
-            case 0x20: return AluOperation::ADD;
-            case 0x22: return AluOperation::SUB;
-            case 0x24: return AluOperation::AND;
-            case 0x25: return AluOperation::OR;
-            case 0x2A: return AluOperation::SLT;
-            default:   return AluOperation::ADD;
-        }
-    } else { // I-type
-        switch (opcode) {
-            case 0x08: return AluOperation::ADD;  // addi
-            case 0x23: return AluOperation::LOAD; // lw
-            case 0x2B: return AluOperation::STORE; // sw
-            default:   return AluOperation::ADD;
-        }
-    }
-}
+// AluOperation get_alu_operation(uint8_t opcode, uint8_t funct) {
+//     if (opcode == 0x00) { // R-type
+//         switch (funct) {
+//             case 0x20: return AluOperation::ADD;
+//             case 0x22: return AluOperation::SUB;
+//             case 0x24: return AluOperation::AND;
+//             case 0x25: return AluOperation::OR;
+//             case 0x2A: return AluOperation::SLT;
+//             default:   return AluOperation::ADD;
+//         }
+//     } else { // I-type
+//         switch (opcode) {
+//             case 0x08: return AluOperation::ADD;  // addi
+//             case 0x23: return AluOperation::LOAD; // lw
+//             case 0x2B: return AluOperation::STORE; // sw
+//             default:   return AluOperation::ADD;
+//         }
+//     }
+// }

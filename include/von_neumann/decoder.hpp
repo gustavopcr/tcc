@@ -7,6 +7,6 @@
 
 // Free functions for instruction decoding (reusable)
 Instruction decode(uint32_t instruction);
-AluOperation get_alu_operation(uint8_t opcode, uint8_t funct);
+// AluOperation get_alu_operation(uint8_t opcode, uint8_t funct);
 
 #endif

@@ -111,6 +111,18 @@ void DecodeStage::tick() {
         uop.immediate = uop.decoded.immediate;
         uop.arch_dest = uop.decoded.rt;
     }
+        // XORI - NEW
+    else if (opcode == 0x0E) {
+        uop.alu_op = AluOperation::XOR;
+        uop.immediate = uop.decoded.immediate;  // Zero extend for logical ops
+        uop.arch_dest = uop.decoded.rt;
+    }
+    // SLTI
+    else if (opcode == 0x0A) {
+        uop.alu_op = AluOperation::SLT;
+        uop.immediate = static_cast<int16_t>(uop.decoded.immediate);  // Sign extend
+        uop.arch_dest = uop.decoded.rt;
+    }
     // Load instructions
     else if (opcode == 0x23) {  // LW
         uop.is_load = true;
