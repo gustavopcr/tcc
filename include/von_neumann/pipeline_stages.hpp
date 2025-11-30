@@ -2,32 +2,44 @@
 #define PIPELINE_STAGES_HPP
 
 #include "von_neumann/uop.hpp"
-#include "von_neumann/memory.hpp"
-#include "von_neumann/register.hpp"
+#include "von_neumann/memory_bus.hpp"
 #include "von_neumann/rat.hpp"
 #include "von_neumann/rob.hpp"
 #include "von_neumann/reservation_station.hpp"
 #include "von_neumann/execution_unit.hpp"
-#include <vector>
+#include <array>
+#include <queue>
+#include <functional>
 
 class FetchStage {
 public:
-    FetchStage(uint32_t& pc, Memory& imem, FetchBuffer& out_buffer);
+    FetchStage(MemoryBus& mem_bus, FetchBuffer& out_buffer, uint32_t start_pc = 0);
+    
     void tick();
     void stall();
     void unstall();
+    bool is_stalled() const { return stalled_; }
+    
+    // NEW: Branch misprediction handling
+    void flush_and_redirect(uint32_t new_pc);
+    uint32_t get_pc() const { return pc_; }
 
 private:
-    uint32_t& pc_;
-    Memory& imem_;
+    MemoryBus& mem_bus_;
     FetchBuffer& out_buffer_;
-    bool stall_ = false;
+    uint32_t pc_;
+    bool stalled_ = false;
+    bool waiting_for_memory_ = false;  // NEW: track if we're waiting
 };
 
 class DecodeStage {
 public:
     DecodeStage(FetchBuffer& in_buffer, DecodeBuffer& out_buffer);
-    void tick(uint32_t current_pc);
+    
+    void tick();
+    
+    // NEW: Flush support
+    void flush();
 
 private:
     FetchBuffer& in_buffer_;
@@ -36,12 +48,17 @@ private:
 
 class DispatchStage {
 public:
-    DispatchStage(DecodeBuffer& in_buffer,
+    DispatchStage(DecodeBuffer& in_buffer, 
                   RegisterAliasTable& rat,
                   ReorderBuffer& rob,
-                  ReservationStation& rs,
-                  const RegisterBank& arf);
+                  ReservationStation& alu_rs,
+                  ReservationStation& mem_rs,      // NEW: memory RS
+                  std::array<uint32_t, 32>& arf);
+    
     void tick();
+    
+    // NEW: Flush support
+    void flush();
 
 private:
     Operand rename_source(uint8_t arch_reg);
@@ -49,46 +66,79 @@ private:
     DecodeBuffer& in_buffer_;
     RegisterAliasTable& rat_;
     ReorderBuffer& rob_;
-    ReservationStation& rs_;
-    const RegisterBank& arf_;
+    ReservationStation& alu_rs_;
+    ReservationStation& mem_rs_;                   // NEW: memory RS
+    std::array<uint32_t, 32>& arf_;
 };
 
 class IssueStage {
 public:
-    IssueStage(ReservationStation& rs, std::vector<ExecutionUnit>& exec_units);
+    IssueStage(ReservationStation& alu_rs,
+               ReservationStation& mem_rs,         // NEW: memory RS
+               ExecutionUnit& alu_eu,
+               ExecutionUnit& mem_eu);             // NEW: memory EU
+    
     void tick();
+    
+    // NEW: Flush support
+    void flush();
 
 private:
-    ReservationStation& rs_;
-    std::vector<ExecutionUnit>& exec_units_;
+    ReservationStation& alu_rs_;
+    ReservationStation& mem_rs_;
+    ExecutionUnit& alu_eu_;
+    ExecutionUnit& mem_eu_;
 };
 
-class WritebackStage {
+class ExecuteStage {
 public:
-    WritebackStage(std::vector<ExecutionUnit>& exec_units,
-                   ReservationStation& rs,
-                   ReorderBuffer& rob);
+    ExecuteStage(ExecutionUnit& alu_eu,
+                 ExecutionUnit& mem_eu,            // NEW: memory EU
+                 MemoryBus& mem_bus,               // NEW: for load execution
+                 ReorderBuffer& rob,
+                 std::queue<CdbMessage>& cdb);
+    
     void tick();
+    
+    // NEW: Flush support
+    void flush();
+    
+    // NEW: Check if a load is waiting for memory
+    bool has_pending_load() const { return pending_load_.has_value(); }
 
 private:
-    std::vector<ExecutionUnit>& exec_units_;
-    ReservationStation& rs_;
+    ExecutionUnit& alu_eu_;
+    ExecutionUnit& mem_eu_;
+    MemoryBus& mem_bus_;
     ReorderBuffer& rob_;
+    std::queue<CdbMessage>& cdb_;
+    
+    // NEW: Track pending load waiting for memory
+    std::optional<PendingMemoryOp> pending_load_;
 };
 
 class CommitStage {
 public:
     CommitStage(ReorderBuffer& rob,
                 RegisterAliasTable& rat,
-                RegisterBank& arf,
-                Memory& dmem);
+                MemoryBus& mem_bus,                // CHANGED: use bus instead of direct memory
+                std::array<uint32_t, 32>& arf,
+                std::function<void(uint32_t)> on_misprediction);  // NEW: callback for flush
+    
     void tick();
+    
+    // NEW: Check if store is waiting for memory
+    bool has_pending_store() const { return pending_store_.has_value(); }
 
 private:
     ReorderBuffer& rob_;
     RegisterAliasTable& rat_;
-    RegisterBank& arf_;
-    Memory& dmem_;
+    MemoryBus& mem_bus_;
+    std::array<uint32_t, 32>& arf_;
+    std::function<void(uint32_t)> on_misprediction_;
+    
+    // NEW: Track pending store waiting for memory
+    std::optional<PendingMemoryOp> pending_store_;
 };
 
 #endif

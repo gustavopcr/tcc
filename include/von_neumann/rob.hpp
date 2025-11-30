@@ -17,7 +17,7 @@ public:
     RobEntry* get_head();
     RobIndex get_head_index() const;
     void commit_head();
-    const RobEntry* get_entry(RobIndex rob_id) const;
+    RobEntry* get_entry(RobIndex rob_id);
     RobEntry* get_entry_mut(RobIndex rob_id);
     bool is_full() const;
     bool is_empty() const;

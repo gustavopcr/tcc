@@ -1,63 +1,51 @@
 #include "von_neumann/reservation_station.hpp"
 
-bool ReservationStation::dispatch(const Uop& uop) {
-    for (auto& entry : entries_) {
-        if (!entry.is_busy) {
-            entry.is_busy = true;
-            entry.rob_id = uop.rob_id;
-            entry.op = uop.alu_op;
-            entry.src1 = uop.src1;
-            entry.src2 = uop.src2;
-            entry.immediate = uop.immediate;
-            entry.is_load = uop.is_load;
-            entry.is_store = uop.is_store;
+ReservationStation::ReservationStation(size_t size)
+    : entries_(size)
+    , capacity_(size)
+{}
+
+bool ReservationStation::allocate(const RsEntry& entry) {
+    for (auto& slot : entries_) {
+        if (!slot.is_busy) {
+            slot = entry;
+            slot.is_busy = true;
             return true;
         }
     }
     return false;
 }
 
-void ReservationStation::snoop_cdb(const CdbMessage& msg) {
+std::optional<size_t> ReservationStation::find_ready() const {
+    for (size_t i = 0; i < entries_.size(); ++i) {
+        if (entries_[i].is_ready()) {
+            return i;
+        }
+    }
+    return std::nullopt;
+}
+
+RsEntry ReservationStation::get_entry(size_t index) const {
+    return entries_[index];
+}
+
+void ReservationStation::deallocate(size_t index) {
+    entries_[index].is_busy = false;
+}
+
+void ReservationStation::snoop_cdb(RobIndex rob_id, uint32_t value) {
     for (auto& entry : entries_) {
         if (!entry.is_busy) continue;
         
-        if (!entry.src1.is_ready && entry.src1.producer_rob == msg.rob_id) {
+        if (!entry.src1.is_ready && entry.src1.producer_rob == rob_id) {
             entry.src1.is_ready = true;
-            entry.src1.value = msg.value;
+            entry.src1.value = value;
         }
-        if (!entry.src2.is_ready && entry.src2.producer_rob == msg.rob_id) {
+        if (!entry.src2.is_ready && entry.src2.producer_rob == rob_id) {
             entry.src2.is_ready = true;
-            entry.src2.value = msg.value;
+            entry.src2.value = value;
         }
     }
-}
-
-std::optional<RsEntry> ReservationStation::try_issue() {
-    for (auto& entry : entries_) {
-        if (entry.is_ready()) {
-            RsEntry issued = entry;
-            entry.is_busy = false;
-            return issued;
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<RsEntry> ReservationStation::try_issue_oldest() {
-    RsEntry* oldest = nullptr;
-    for (auto& entry : entries_) {
-        if (entry.is_ready()) {
-            if (!oldest || entry.rob_id < oldest->rob_id) {
-                oldest = &entry;
-            }
-        }
-    }
-    if (oldest) {
-        RsEntry issued = *oldest;
-        oldest->is_busy = false;
-        return issued;
-    }
-    return std::nullopt;
 }
 
 bool ReservationStation::is_full() const {

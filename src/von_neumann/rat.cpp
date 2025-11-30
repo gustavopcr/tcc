@@ -20,7 +20,13 @@ void RegisterAliasTable::clear_if_matches(uint8_t arch_reg, RobIndex rob_id) {
     }
 }
 
-void RegisterAliasTable::flush() {
+void RegisterAliasTable::clear_mapping(uint8_t arch_reg) {
+    if (arch_reg == 0) return;
+    entries_[arch_reg].is_mapped = false;
+    entries_[arch_reg].rob_index = 0;
+}
+
+void RegisterAliasTable::clear_all() {
     for (auto& entry : entries_) {
         entry.is_mapped = false;
         entry.rob_index = 0;

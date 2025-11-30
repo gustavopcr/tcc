@@ -7,19 +7,26 @@
 
 class ReservationStation {
 public:
-    static constexpr size_t RS_SIZE = 8;
+    explicit ReservationStation(size_t size = 8);
     
-    ReservationStation() = default;
+    // Allocation
+    bool allocate(const RsEntry& entry);
     
-    bool dispatch(const Uop& uop);
-    void snoop_cdb(const CdbMessage& msg);
-    std::optional<RsEntry> try_issue();
-    std::optional<RsEntry> try_issue_oldest();
+    // Issue
+    std::optional<size_t> find_ready() const;
+    RsEntry get_entry(size_t index) const;
+    void deallocate(size_t index);
+    
+    // CDB Snooping
+    void snoop_cdb(RobIndex rob_id, uint32_t value);
+    
+    // Status
     bool is_full() const;
     void flush();
 
 private:
-    std::array<RsEntry, RS_SIZE> entries_{};
+    std::vector<RsEntry> entries_;
+    size_t capacity_;
 };
 
 #endif

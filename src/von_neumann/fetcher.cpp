@@ -14,7 +14,7 @@ void Fetcher::tick()
     return;
   }
 
-  uint32_t instruction_data = memory_.read_word(pc_);
+  uint32_t instruction_data = memory_.load_word(pc_);
   output_queue_.push(instruction_data);
   pc_ += 4;
 }

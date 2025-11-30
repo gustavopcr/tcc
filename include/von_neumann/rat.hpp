@@ -17,7 +17,9 @@ public:
     std::optional<RobIndex> get_mapping(uint8_t arch_reg) const;
     void set_mapping(uint8_t arch_reg, RobIndex rob_id);
     void clear_if_matches(uint8_t arch_reg, RobIndex rob_id);
-    void flush();
+    void clear_mapping(uint8_t arch_reg);  // NEW
+    void clear_all();                       // NEW: for flush
+    void flush() { clear_all(); }           // Alias
 
 private:
     std::array<RatEntry, 32> entries_{};

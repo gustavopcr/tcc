@@ -1,52 +1,120 @@
 #include "von_neumann/mips.hpp"
 
 Mips::Mips(std::array<uint32_t, 4096> program, MipsConfig config)
-    : imem_(program)
-    , dmem_(program)
+    : memory_(program)
+    , mem_bus_(memory_, config.data_priority)
+    , rob_()                          // Use default size from class
+    , alu_rs_(config.rs_size)
+    , mem_rs_(config.rs_size)
+    , alu_eu_(config.alu_latency)     // Pass latency
+    , mem_eu_(config.mem_latency)     // Pass latency
+    , config_(config)
 {
-    for (size_t i = 0; i < config.num_alus; ++i) {
-        alu_units_.emplace_back(config.alu_latency);
-    }
-    for (size_t i = 0; i < config.num_mem_units; ++i) {
-        mem_units_.emplace_back(config.mem_latency);
-    }
+    // Initialize $zero to 0
+    arf_[0] = 0;
     
-    fetch_stage_ = std::make_unique<FetchStage>(pc_, imem_, fetch_buffer_);
+    // Create pipeline stages
+    fetch_stage_ = std::make_unique<FetchStage>(mem_bus_, fetch_buffer_, 0);
     decode_stage_ = std::make_unique<DecodeStage>(fetch_buffer_, decode_buffer_);
     dispatch_stage_ = std::make_unique<DispatchStage>(
-        decode_buffer_, rat_, rob_, alu_rs_, arf_);
-    alu_issue_stage_ = std::make_unique<IssueStage>(alu_rs_, alu_units_);
-    mem_issue_stage_ = std::make_unique<IssueStage>(mem_rs_, mem_units_);
-    alu_wb_stage_ = std::make_unique<WritebackStage>(alu_units_, alu_rs_, rob_);
-    mem_wb_stage_ = std::make_unique<WritebackStage>(mem_units_, mem_rs_, rob_);
-    commit_stage_ = std::make_unique<CommitStage>(rob_, rat_, arf_, dmem_);
+        decode_buffer_, rat_, rob_, alu_rs_, mem_rs_, arf_);
+    issue_stage_ = std::make_unique<IssueStage>(alu_rs_, mem_rs_, alu_eu_, mem_eu_);
+    execute_stage_ = std::make_unique<ExecuteStage>(alu_eu_, mem_eu_, mem_bus_, rob_, cdb_);
+    commit_stage_ = std::make_unique<CommitStage>(
+        rob_, rat_, mem_bus_, arf_,
+        [this](uint32_t target) { handle_misprediction(target); });
 }
 
 void Mips::tick() {
-    // Reverse order for cycle accuracy
+    if (halted_) return;
+    
+    stats_.cycles++;
+    
+    // Clear memory bus requests from previous cycle
+    mem_bus_.clear_requests();
+    
+    // Execute pipeline stages in reverse order (to simulate parallel operation)
+    // This ensures that results from earlier stages are available to later stages
+    
+    // Commit (updates architectural state)
     commit_stage_->tick();
-    alu_wb_stage_->tick();
-    mem_wb_stage_->tick();
-    alu_issue_stage_->tick();
-    mem_issue_stage_->tick();
+    
+    // Execute (produces results, may request memory for loads)
+    execute_stage_->tick();
+    
+    // Issue (moves from RS to EU)
+    issue_stage_->tick();
+    
+    // Dispatch (renames and allocates RS/ROB)
     dispatch_stage_->tick();
-    decode_stage_->tick(pc_ - 4);
+    
+    // Decode (decodes instructions)
+    decode_stage_->tick();
+    
+    // Fetch (requests instruction from memory)
     fetch_stage_->tick();
     
-    cycle_count_++;
-}
-
-void Mips::run(size_t max_cycles) {
-    while (!halted_ && cycle_count_ < max_cycles) {
-        tick();
-        
-        if (pc_ >= 4096 * 4) {
-            halted_ = true;
-        }
+    // Process memory bus (arbitrates between fetch and data)
+    mem_bus_.tick();
+    
+    // Snoop CDB to update reservation station entries
+    while (!cdb_.empty()) {
+        CdbMessage msg = cdb_.front();
+        cdb_.pop();
+        alu_rs_.snoop_cdb(msg.rob_id, msg.value);
+        mem_rs_.snoop_cdb(msg.rob_id, msg.value);
+    }
+    
+    // Update statistics
+    stats_.fetch_stalls = mem_bus_.get_fetch_stall_cycles();
+    stats_.data_stalls = mem_bus_.get_data_stall_cycles();
+    stats_.memory_accesses = mem_bus_.get_total_accesses();
+    
+    // Check for halt condition (no more work)
+    if (fetch_buffer_.instructions.empty() &&
+        decode_buffer_.uops.empty() &&
+        rob_.is_empty() &&
+        !execute_stage_->has_pending_load() &&
+        !commit_stage_->has_pending_store()) {
+        halted_ = true;
     }
 }
 
-const RegisterBank& Mips::get_registers() const { return arf_; }
-uint32_t Mips::get_pc() const { return pc_; }
-size_t Mips::get_cycle_count() const { return cycle_count_; }
-bool Mips::is_halted() const { return halted_; }
+void Mips::run(size_t max_cycles) {
+    while (!halted_ && stats_.cycles < max_cycles) {
+        tick();
+    }
+}
+
+void Mips::handle_misprediction(uint32_t target_pc) {
+    stats_.branch_mispredictions++;
+    flush_pipeline();
+    fetch_stage_->flush_and_redirect(target_pc);
+}
+
+void Mips::flush_pipeline() {
+    // Clear all pipeline buffers
+    fetch_buffer_.instructions.clear();
+    fetch_buffer_.pcs.clear();
+    decode_buffer_.uops.clear();
+    
+    // Clear reservation stations
+    alu_rs_.flush();
+    mem_rs_.flush();
+    
+    // Clear execution units
+    alu_eu_.flush();
+    mem_eu_.flush();
+    
+    // Clear execute stage pending operations
+    execute_stage_->flush();
+    
+    // Clear ROB (except committed entries)
+    rob_.flush();
+    
+    // Reset RAT to architectural state
+    rat_.clear_all();
+    
+    // Clear CDB
+    while (!cdb_.empty()) cdb_.pop();
+}

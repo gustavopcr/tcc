@@ -52,7 +52,7 @@ void ReorderBuffer::commit_head() {
     count_--;
 }
 
-const RobEntry* ReorderBuffer::get_entry(RobIndex rob_id) const {
+RobEntry* ReorderBuffer::get_entry(RobIndex rob_id) {
     if (rob_id == 0 || rob_id > ROB_SIZE) return nullptr;
     return &entries_[rob_id - 1];
 }
