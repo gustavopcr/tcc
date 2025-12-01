@@ -21,6 +21,7 @@ public:
   void load_program(std::string_view graph_file);
   void set_inputs(const std::vector<uint64_t>& input_data);
   const DataflowStats& get_stats() const { return stats_; }
+  bool is_idle() const;
 
 private:
   NodeGraph node_graph_;
@@ -28,7 +29,6 @@ private:
   std::queue<Token> token_queue_;
   std::queue<MatchedToken> matched_token_queue_;
   std::queue<ExecutionPackage> execution_queue_;
-  bool is_idle() const;
 
   MemoryUnit mem_unit_;
   WmUnit wm_unit_;

@@ -17,8 +17,8 @@ struct AluSlot
 {
   ExecutionPackage package;
   int cycles_remaining;
+  bool just_dispatched = false;  // Prevents decrement on dispatch cycle
 };
-
 // Execution Unit
 class ExUnit
 {

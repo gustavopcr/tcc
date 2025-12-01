@@ -42,18 +42,25 @@ enum class OperationCycles
   SUB = 2,
   MULT = 4,
   DIV = 6,
+  // --- Comparison Operations ---
+  SLT = 2,
+  SGT = 2,
+  SLE = 2,
+  SGE = 2,
+  EQ = 2,
+  // --- Control/Routing ---
   FORK = 3,
   SWITCH = 4,
   MERGE = 5,
-  CALL = 10,   // Context switch overhead
-  RETURN = 10, // Context switch overhead
+  CALL = 10,
+  RETURN = 10,
   LOAD = 20,
   STORE = 20,
   INPUT = 1,
   OUTPUT = 1,
 };
 
-Operation operation_from_string(std::string_view op_str)
+inline Operation operation_from_string(std::string_view op_str)
 {
     if (op_str == "ADD")    return Operation::ADD;
     if (op_str == "SUB")    return Operation::SUB;
@@ -74,12 +81,17 @@ Operation operation_from_string(std::string_view op_str)
     throw std::runtime_error("Unknown operation: " + std::string(op_str));
 }
 
-OperationCycles get_op_cycle(Operation op) {
+inline OperationCycles get_op_cycle(Operation op) {
     switch(op) {
         case Operation::ADD: return OperationCycles::ADD;
         case Operation::SUB: return OperationCycles::SUB;
         case Operation::MULT: return OperationCycles::MULT;
         case Operation::DIV: return OperationCycles::DIV;
+        case Operation::SLT: return OperationCycles::SLT;
+        case Operation::SGT: return OperationCycles::SGT;
+        case Operation::SLE: return OperationCycles::SLE;
+        case Operation::SGE: return OperationCycles::SGE;
+        case Operation::EQ: return OperationCycles::EQ;
         case Operation::FORK: return OperationCycles::FORK;
         case Operation::SWITCH: return OperationCycles::SWITCH;
         case Operation::MERGE: return OperationCycles::MERGE;
@@ -89,7 +101,8 @@ OperationCycles get_op_cycle(Operation op) {
         case Operation::STORE: return OperationCycles::STORE;
         case Operation::INPUT: return OperationCycles::INPUT;
         case Operation::OUTPUT: return OperationCycles::OUTPUT;
-        default: return OperationCycles::ADD;
     }
+    // Should never reach here if all cases covered
+    throw std::runtime_error("Unknown operation cycle");
 }
 #endif

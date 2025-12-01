@@ -22,6 +22,6 @@ private:
 
   std::unordered_map<TokenTag, std::vector<Token>> waiting_token_mem_;
   std::queue<MatchedToken>& matched_tokens_;
-  FiringRuleMap fr_map_;
+  FiringRuleMap& fr_map_;
 };
 #endif

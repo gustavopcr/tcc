@@ -13,34 +13,53 @@ ExUnit::ExUnit(std::queue<ExecutionPackage>& execute_queue,
 
 void ExUnit::tick()
 {
-  for(auto& a:alus_) // executes currently used ALUs
-  {
-    if(a.has_value())
+    std::cout << "[ExUnit::tick] execution_queue size: " << execute_queue_.size() << std::endl;
+    
+    // Step 1: Process existing work - decrement timers and complete if done
+    for (size_t i = 0; i < alus_.size(); ++i)
     {
-      --a->cycles_remaining;
-      if(a->cycles_remaining <= 0)
-      {
-        execute(a.value());
-        a.reset();
-      }
+        auto& slot = alus_[i];
+        if (slot.has_value())
+        {
+            std::cout << "[ExUnit::tick] ALU[" << i << "] has work, just_dispatched=" 
+                      << slot->just_dispatched << ", cycles_remaining=" << slot->cycles_remaining << std::endl;
+            
+            if (slot->just_dispatched)
+            {
+                // First cycle after dispatch - clear flag, don't decrement
+                slot->just_dispatched = false;
+            }
+            else
+            {
+                // Decrement timer for work that's been in-flight
+                --slot->cycles_remaining;
+                std::cout << "[ExUnit::tick] ALU[" << i << "] decremented to " << slot->cycles_remaining << std::endl;
+                
+                if (slot->cycles_remaining <= 0)
+                {
+                    std::cout << "[ExUnit::tick] ALU[" << i << "] EXECUTING" << std::endl;
+                    execute(slot.value());
+                    slot.reset();
+                }
+            }
+        }
     }
-  }
 
-  for (auto& slot : alus_) // finds work for empty ALUs
-  {
-    if (!slot.has_value())
+    // Step 2: Dispatch new work into available slots
+    for (size_t i = 0; i < alus_.size(); ++i)
     {
-      if (execute_queue_.empty())
-      {
-        break; 
-      }
-
-      auto ep = execute_queue_.front();
-      execute_queue_.pop();
-      auto cycles = get_op_cycle(ep.op);
-      slot.emplace(AluSlot{ep, static_cast<int>(cycles)});
+        auto& slot = alus_[i];
+        if (!slot.has_value() && !execute_queue_.empty())
+        {
+            auto ep = execute_queue_.front();
+            execute_queue_.pop();
+            auto cycles = static_cast<int>(get_op_cycle(ep.op));
+            std::cout << "[ExUnit::tick] Dispatching to ALU[" << i << "] with " << cycles << " cycles" << std::endl;
+            slot.emplace(AluSlot{ep, cycles, true});  // Mark as just dispatched
+        }
     }
-  }
+    
+    std::cout << "[ExUnit::tick] Active ALUs at end: " << get_active_alu_count() << std::endl;
 }
 
 void ExUnit::execute(AluSlot& as) {

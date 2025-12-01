@@ -10,6 +10,8 @@ WmUnit::WmUnit(FiringRuleMap& fr, std::queue<MatchedToken>& matched_tokens)
 
 void WmUnit::tick(Token token)
 {
+  std::cout << "[WmUnit::tick] Token ip=" << token.ip << ", fp=" << token.fp 
+            << ", port=" << (int)token.p << ", value=" << token.v << std::endl;
   TokenTag token_tag{token.ip, token.fp};
   
   // 1. Get or Create the token list for this tag
@@ -36,8 +38,12 @@ void WmUnit::tick(Token token)
 
   // 3. Check Firing Rule
   auto fr_rule = fr_map_.find(token.ip);
+  std::cout << "[WmUnit::tick] fr_map size=" << fr_map_.size() 
+            << ", found rule=" << (fr_rule != fr_map_.end())
+            << ", token_list size=" << token_list.size();
   if(fr_rule != fr_map_.end() && token_list.size() == fr_rule->second)
   {
+    std::cout << "[WmUnit::tick] FIRING!" << std::endl;
     // Fire!
     MatchedToken mt = match_token(token_list);
     matched_tokens_.push(mt);
