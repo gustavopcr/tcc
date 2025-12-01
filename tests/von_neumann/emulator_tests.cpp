@@ -2197,3 +2197,257 @@ TEST_F(EmulatorTest, DebugStuckLoop) {
               << ", $t2=" << cpu.get_register(10)
               << ", mem[2048]=" << cpu.get_memory(2048) << std::endl;
 }
+
+TEST_F(EmulatorTest, BranchOffsetDiagnostic) {
+    auto instructions = assembler_.assemble({
+        "ADDI $t0, $zero, 1",       // [0]
+        "ADDI $t1, $zero, 1",       // [1]
+        "BEQ $t0, $t1, 2",          // [2] Should skip [3] and [4], land on [5]
+        "ADDI $t2, $zero, 99",      // [3] should be skipped
+        "ADDI $t2, $zero, 88",      // [4] should be skipped
+        "ADDI $t3, $zero, 42",      // [5] should execute
+    });
+    
+    std::cerr << "Testing: BEQ with offset 2 at index 2" << std::endl;
+    std::cerr << "Expected: skip indices 3,4 and execute index 5" << std::endl;
+    
+    std::array<uint32_t, 4096> prog{};
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        prog[i] = instructions[i];
+    }
+    
+    Mips cpu(prog);
+    cpu.run(50);
+    
+    std::cerr << "$t2 = " << cpu.get_register(10) << " (should be 0, not 99 or 88)" << std::endl;
+    std::cerr << "$t3 = " << cpu.get_register(11) << " (should be 42)" << std::endl;
+    
+    EXPECT_EQ(cpu.get_register(10), 0u);   // $t2 should NOT be set
+    EXPECT_EQ(cpu.get_register(11), 42u);  // $t3 should be 42
+}
+
+// ...existing code...
+
+TEST_F(EmulatorTest, RLECompression_BranchPredictorStress) {
+    std::array<uint32_t, 4096> prog{};
+    
+    auto instructions = assembler_.assemble({
+        // INITIALIZATION (indices 0-4)
+        "ADDI $s0, $zero, 2048",    // 0: input_ptr
+        "ADDI $s1, $zero, 2560",    // 1: output_ptr
+        "LW $s2, 0($s0)",           // 2: current_val = input[0]
+        "ADDI $s3, $zero, 1",       // 3: count = 1
+        "ADDI $s0, $s0, 4",         // 4: input_ptr++
+        
+        // MAIN LOOP (index 5)
+        "LW $t0, 0($s0)",           // 5: next_val = *input_ptr
+        
+        // TERMINATOR CHECK: target index 18, current 6, offset = 18-6-1 = 11
+        "BEQ $t0, $zero, 11",       // 6: if terminator -> write_final (18)
+        
+        // CRITICAL: Branch Misprediction Risk
+        // target index 11, current 7, offset = 11-7-1 = 3
+        "BNE $t0, $s2, 3",          // 7: if different -> write_run (11)
+        
+        // MATCH CASE (indices 8-10)
+        "ADDI $s3, $s3, 1",         // 8: count++
+        "ADDI $s0, $s0, 4",         // 9: input_ptr++
+        // target index 5, current 10, offset = 5-10-1 = -6
+        "BEQ $zero, $zero, -6",     // 10: -> loop (5)
+        
+        // WRITE RUN (index 11) - when character changes
+        "SW $s3, 0($s1)",           // 11: store count
+        "SW $s2, 4($s1)",           // 12: store char
+        "ADDI $s1, $s1, 8",         // 13: output_ptr += 8
+        "ADD $s2, $t0, $zero",      // 14: current_val = next_val
+        "ADDI $s3, $zero, 1",       // 15: count = 1
+        "ADDI $s0, $s0, 4",         // 16: input_ptr++
+        // target index 5, current 17, offset = 5-17-1 = -13
+        "BEQ $zero, $zero, -13",    // 17: -> loop (5)
+        
+        // WRITE FINAL (index 18) - when terminator found
+        "SW $s3, 0($s1)",           // 18: store final count
+        "SW $s2, 4($s1)",           // 19: store final char
+        "ADDI $s7, $zero, 1",       // 20: done marker
+    });
+    
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        prog[i] = instructions[i];
+    }
+    
+    // INPUT DATA: "AAABCCDD"
+    prog[512] = 0x00000041;  // 'A'
+    prog[513] = 0x00000041;  // 'A'
+    prog[514] = 0x00000041;  // 'A'
+    prog[515] = 0x00000042;  // 'B'
+    prog[516] = 0x00000043;  // 'C'
+    prog[517] = 0x00000043;  // 'C'
+    prog[518] = 0x00000044;  // 'D'
+    prog[519] = 0x00000044;  // 'D'
+    prog[520] = 0x00000000;  // NULL terminator
+    
+    Mips cpu(prog);
+    
+    std::cerr << "\n=== RLE Compression - Branch Predictor Stress Test ===" << std::endl;
+    std::cerr << "Input: \"AAABCCDD\"" << std::endl;
+    std::cerr << "Expected: (3,'A'), (1,'B'), (2,'C'), (2,'D')" << std::endl;
+    
+    cpu.run(500);
+    
+    auto stats = cpu.get_stats();
+    
+    uint32_t count0 = cpu.get_memory(2560);
+    uint32_t char0 = cpu.get_memory(2564);
+    uint32_t count1 = cpu.get_memory(2568);
+    uint32_t char1 = cpu.get_memory(2572);
+    uint32_t count2 = cpu.get_memory(2576);
+    uint32_t char2 = cpu.get_memory(2580);
+    uint32_t count3 = cpu.get_memory(2584);
+    uint32_t char3 = cpu.get_memory(2588);
+    
+    std::cerr << "\n=== Output ===" << std::endl;
+    std::cerr << "  (" << count0 << ",'" << static_cast<char>(char0) << "')" << std::endl;
+    std::cerr << "  (" << count1 << ",'" << static_cast<char>(char1) << "')" << std::endl;
+    std::cerr << "  (" << count2 << ",'" << static_cast<char>(char2) << "')" << std::endl;
+    std::cerr << "  (" << count3 << ",'" << static_cast<char>(char3) << "')" << std::endl;
+    std::cerr << "\nBranch mispredictions: " << stats.branch_mispredictions << std::endl;
+    std::cerr << "IPC: " << stats.get_ipc() << std::endl;
+    
+    EXPECT_EQ(count0, 3u);
+    EXPECT_EQ(char0, 0x41u);
+    EXPECT_EQ(count1, 1u);
+    EXPECT_EQ(char1, 0x42u);
+    EXPECT_EQ(count2, 2u);
+    EXPECT_EQ(char2, 0x43u);
+    EXPECT_EQ(count3, 2u);
+    EXPECT_EQ(char3, 0x44u);
+    EXPECT_EQ(cpu.get_register(23), 1u);
+    EXPECT_GT(stats.branch_mispredictions, 0u);
+}
+
+TEST_F(EmulatorTest, RLECompression_LongInput) {
+    std::array<uint32_t, 4096> prog{};
+    
+    auto instructions = assembler_.assemble({
+        "ADDI $s0, $zero, 2048",
+        "ADDI $s1, $zero, 2560",
+        "LW $s2, 0($s0)",
+        "ADDI $s3, $zero, 1",
+        "ADDI $s0, $s0, 4",
+        "LW $t0, 0($s0)",
+        "BEQ $t0, $zero, 11",
+        "BNE $t0, $s2, 3",
+        "ADDI $s3, $s3, 1",
+        "ADDI $s0, $s0, 4",
+        "BEQ $zero, $zero, -6",
+        "SW $s3, 0($s1)",
+        "SW $s2, 4($s1)",
+        "ADDI $s1, $s1, 8",
+        "ADD $s2, $t0, $zero",
+        "ADDI $s3, $zero, 1",
+        "ADDI $s0, $s0, 4",
+        "BEQ $zero, $zero, -13",
+        "SW $s3, 0($s1)",
+        "SW $s2, 4($s1)",
+        "ADDI $s7, $zero, 1",
+    });
+    
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        prog[i] = instructions[i];
+    }
+    
+    // Input: "AAAAABBBBCCDDDDDDD"
+    int idx = 512;
+    for (int i = 0; i < 5; ++i) prog[idx++] = 0x41;
+    for (int i = 0; i < 4; ++i) prog[idx++] = 0x42;
+    for (int i = 0; i < 2; ++i) prog[idx++] = 0x43;
+    for (int i = 0; i < 7; ++i) prog[idx++] = 0x44;
+    prog[idx] = 0;
+    
+    Mips cpu(prog);
+    
+    std::cerr << "\n=== RLE Long Input ===" << std::endl;
+    std::cerr << "Input: \"AAAAABBBBCCDDDDDDD\"" << std::endl;
+    
+    cpu.run(1000);
+    
+    auto stats = cpu.get_stats();
+    std::cerr << "Branch mispredictions: " << stats.branch_mispredictions << std::endl;
+    
+    EXPECT_EQ(cpu.get_memory(2560), 5u);
+    EXPECT_EQ(cpu.get_memory(2564), 0x41u);
+    EXPECT_EQ(cpu.get_memory(2568), 4u);
+    EXPECT_EQ(cpu.get_memory(2572), 0x42u);
+    EXPECT_EQ(cpu.get_memory(2576), 2u);
+    EXPECT_EQ(cpu.get_memory(2580), 0x43u);
+    EXPECT_EQ(cpu.get_memory(2584), 7u);
+    EXPECT_EQ(cpu.get_memory(2588), 0x44u);
+    EXPECT_EQ(cpu.get_register(23), 1u);
+    EXPECT_GT(stats.branch_mispredictions, 5u);
+}
+
+TEST_F(EmulatorTest, RLECompression_WorstCaseBranchPredictor) {
+    std::array<uint32_t, 4096> prog{};
+    
+    auto instructions = assembler_.assemble({
+        "ADDI $s0, $zero, 2048",
+        "ADDI $s1, $zero, 2560",
+        "LW $s2, 0($s0)",
+        "ADDI $s3, $zero, 1",
+        "ADDI $s0, $s0, 4",
+        "LW $t0, 0($s0)",
+        "BEQ $t0, $zero, 11",
+        "BNE $t0, $s2, 3",          // CRITICAL: Always taken with alternating
+        "ADDI $s3, $s3, 1",
+        "ADDI $s0, $s0, 4",
+        "BEQ $zero, $zero, -6",
+        "SW $s3, 0($s1)",
+        "SW $s2, 4($s1)",
+        "ADDI $s1, $s1, 8",
+        "ADD $s2, $t0, $zero",
+        "ADDI $s3, $zero, 1",
+        "ADDI $s0, $s0, 4",
+        "BEQ $zero, $zero, -13",
+        "SW $s3, 0($s1)",
+        "SW $s2, 4($s1)",
+        "ADDI $s7, $zero, 1",
+    });
+    
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        prog[i] = instructions[i];
+    }
+    
+    // Input: "ABABABAB"
+    prog[512] = 0x41;
+    prog[513] = 0x42;
+    prog[514] = 0x41;
+    prog[515] = 0x42;
+    prog[516] = 0x41;
+    prog[517] = 0x42;
+    prog[518] = 0x41;
+    prog[519] = 0x42;
+    prog[520] = 0;
+    
+    Mips cpu(prog);
+    
+    std::cerr << "\n=== RLE Worst Case (Alternating) ===" << std::endl;
+    std::cerr << "Input: \"ABABABAB\"" << std::endl;
+    
+    cpu.run(1000);
+    
+    auto stats = cpu.get_stats();
+    std::cerr << "Branch mispredictions: " << stats.branch_mispredictions << std::endl;
+    std::cerr << "IPC: " << stats.get_ipc() << std::endl;
+    
+    for (int i = 0; i < 8; ++i) {
+        uint32_t count = cpu.get_memory(2560 + i * 8);
+        uint32_t ch = cpu.get_memory(2564 + i * 8);
+        EXPECT_EQ(count, 1u) << "Run " << i << " should have count 1";
+        EXPECT_EQ(ch, (i % 2 == 0) ? 0x41u : 0x42u);
+    }
+    
+    EXPECT_EQ(cpu.get_register(23), 1u);
+    EXPECT_GE(stats.branch_mispredictions, 7u);
+}
+
+// ...existing code...
