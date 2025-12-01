@@ -110,6 +110,13 @@ void DecodeStage::tick() {
             uop.immediate = uop.decoded.shamt;  // Shift amount from shamt field
         }
     }
+    else if (opcode == 0x1C) {
+        uint8_t funct = uop.decoded.funct;
+        if (funct == 0x02) {  // MUL rd, rs, rt
+            uop.alu_op = AluOperation::MUL;
+            uop.arch_dest = uop.decoded.rd;
+        }
+    }
     // I-type ALU (ADDI, ANDI, ORI, etc.)
     else if (opcode == 0x08 || opcode == 0x09) {  // ADDI, ADDIU
         uop.alu_op = AluOperation::ADD;
@@ -259,7 +266,7 @@ void DispatchStage::tick() {
         // Shift instructions: src1 = rt (value to shift), src2 = shamt (shift amount)
         src1 = rename_source(uop.decoded.rt);
         src2 = Operand::ready(uop.decoded.shamt);  // Shift amount is immediate
-    } else if (uop.decoded.op == 0) {  // Other R-type: both rs and rt are sources
+    } else if (uop.decoded.op == 0 || uop.decoded.op == 0x1C) {  // Other R-type: both rs and rt are sources
         src1 = rename_source(uop.decoded.rs);
         src2 = rename_source(uop.decoded.rt);
     } else if (uop.is_store) {  // Store: rs is base, rt is data

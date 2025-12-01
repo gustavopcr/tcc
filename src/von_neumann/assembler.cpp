@@ -209,6 +209,17 @@ uint32_t Assembler::assemble_instruction(const std::string& line) {
         uint8_t rt = parse_register(tokens[3]);
         return encode_r_type(rs, rt, rd, 0, 0x27);
     }
+    else if (mnemonic == "MUL") {
+        // MUL rd, rs, rt (MIPS32 - opcode 0x1C, funct 0x02)
+        uint8_t rd = parse_register(tokens[1]);
+        uint8_t rs = parse_register(tokens[2]);
+        uint8_t rt = parse_register(tokens[3]);
+        return (0x1Cu << 26) |
+               (static_cast<uint32_t>(rs) << 21) |
+               (static_cast<uint32_t>(rt) << 16) |
+               (static_cast<uint32_t>(rd) << 11) |
+               0x02u;
+    }
     // I-type ALU instructions
     else if (mnemonic == "ADDI") {
         // ADDI rt, rs, imm

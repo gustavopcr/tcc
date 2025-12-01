@@ -30,7 +30,7 @@ uint32_t alu(AluOperation op, uint32_t rs, uint32_t rt)
 
     case AluOperation::SRL:
       return rs >> rt;  // rs (value) shifted right by rt (shift amount)
-    
+    case AluOperation::MUL: return rs * rt;   // NEW: Multiply (lower 32 bits)
     default:
       return 0; 
   }

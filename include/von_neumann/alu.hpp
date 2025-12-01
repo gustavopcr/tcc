@@ -14,10 +14,12 @@ enum class AluOperation : uint8_t {
     SLT = 0b0111,
     BEQ = 0b1000,
     BNE = 0b1001,
+    MUL = 0b1010,    // NEW: Multiply
     NOR = 0b1100,
     STORE = 0b1110,
     LOAD = 0b1111
 };
+
 
 uint32_t alu(AluOperation op, uint32_t rs, uint32_t rt);
 

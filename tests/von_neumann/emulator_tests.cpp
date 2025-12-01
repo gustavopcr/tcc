@@ -2451,3 +2451,501 @@ TEST_F(EmulatorTest, RLECompression_WorstCaseBranchPredictor) {
 }
 
 // ...existing code...
+
+// ============================================================================
+// Sparse Matrix-Vector Multiplication (SpMV) - Memory Wall Stress Test
+// ============================================================================
+
+TEST_F(EmulatorTest, SpMV_MemoryWallStress) {
+    // CSR Format SpMV: y = A * x
+    // 
+    // Matrix A (3x3):
+    // [ 5  0  0 ]
+    // [ 0  8  0 ]
+    // [ 2  0  3 ]
+    //
+    // Vector X: [2, 1, 4]
+    //
+    // Expected Y:
+    //   y[0] = 5*2 = 10
+    //   y[1] = 8*1 = 8
+    //   y[2] = 2*2 + 3*4 = 4 + 12 = 16
+    //
+    // CSR Representation:
+    //   row_ptr = [0, 1, 2, 4]  (row 0 starts at 0, row 1 at 1, row 2 at 2, end at 4)
+    //   col_ind = [0, 1, 0, 2]  (column indices of non-zeros)
+    //   values  = [5, 8, 2, 3]  (non-zero values)
+    
+    std::array<uint32_t, 4096> prog{};
+    
+    // Memory Layout:
+    // 0x000 - 0x1FF: Program code (words 0-127)
+    // 0x800 (2048):  row_ptr (4 words)     - words 512-515
+    // 0x810 (2064):  col_ind (4 words)     - words 516-519
+    // 0x820 (2080):  values  (4 words)     - words 520-523
+    // 0x830 (2096):  vector_x (3 words)    - words 524-526
+    // 0x840 (2112):  vector_y (3 words)    - words 528-530
+    
+    auto instructions = assembler_.assemble({
+        // INITIALIZATION (indices 0-6)
+        "ADDI $s0, $zero, 2048",    // 0: row_ptr base
+        "ADDI $s1, $zero, 2064",    // 1: col_ind base
+        "ADDI $s2, $zero, 2080",    // 2: values base
+        "ADDI $s3, $zero, 2096",    // 3: vector_x base
+        "ADDI $s4, $zero, 2112",    // 4: vector_y base
+        "ADDI $s5, $zero, 3",       // 5: NUM_ROWS = 3
+        "ADDI $s6, $zero, 0",       // 6: i = 0 (row index)
+        
+        // OUTER LOOP: for each row i (index 7)
+        // Check if i >= NUM_ROWS -> done
+        // target: done (index 33), current: 7, offset = 33-7-1 = 25
+        "BEQ $s6, $s5, 25",         // 7: if i == NUM_ROWS -> done  <-- FIX: was 29, should be 25
+        // ============================================================
+        // OUTER LOOP: for each row i (index 7)
+        // ============================================================
+        // outer_loop:
+        
+        // Calculate address of row_ptr[i]: $t7 = row_ptr + i*4
+        "SLL $t7, $s6, 2",          // 8: $t7 = i * 4
+        "ADD $t7, $s0, $t7",        // 9: $t7 = row_ptr + i*4
+        
+        // Load start_idx = row_ptr[i]
+        "LW $t0, 0($t7)",           // 10: $t0 = start_idx
+        
+        // Load end_idx = row_ptr[i+1]
+        "LW $t1, 4($t7)",           // 11: $t1 = end_idx
+        
+        // Initialize sum = 0
+        "ADDI $t3, $zero, 0",       // 12: sum = 0
+        
+        // Initialize j = start_idx
+        "ADD $t2, $t0, $zero",      // 13: j = start_idx
+        
+        // ============================================================
+        // INNER LOOP: for j from start_idx to end_idx-1 (index 14)
+        // ============================================================
+        // inner_loop:
+        
+        // Check if j >= end_idx -> end inner loop
+        // target: end_inner (index 28), current: 14, offset = 28-14-1 = 13
+        "BEQ $t2, $t1, 13",         // 14: if j == end_idx -> end_inner
+        
+        // --- STALL 1: Load Column Index ---
+        // Calculate address of col_ind[j]: $t7 = col_ind + j*4
+        "SLL $t7, $t2, 2",          // 15: $t7 = j * 4
+        "ADD $t7, $s1, $t7",        // 16: $t7 = col_ind + j*4
+        "LW $t4, 0($t7)",           // 17: col = col_ind[j] (STALL: dependent load)
+        
+        // --- STALL 2: Load Matrix Value ---
+        // Calculate address of values[j]: $t7 = values + j*4
+        "SLL $t7, $t2, 2",          // 18: $t7 = j * 4
+        "ADD $t7, $s2, $t7",        // 19: $t7 = values + j*4
+        "LW $t5, 0($t7)",           // 20: val = values[j] (STALL: dependent load)
+        
+        // --- STALL 3: CRITICAL - Memory Wall / Dependent Load Stall ---
+        // Calculate address of vector_x[col]: $t7 = vector_x + col*4
+        // This load DEPENDS on $t4 (col) which was just loaded!
+        "SLL $t7, $t4, 2",          // 21: $t7 = col * 4 (STALL: waiting for $t4)
+        "ADD $t7, $s3, $t7",        // 22: $t7 = vector_x + col*4
+        // CRITICAL: Memory Wall / Dependent Load Stall
+        "LW $t6, 0($t7)",           // 23: vec_val = vector_x[col]
+        
+        // --- Multiply and accumulate ---
+        // sum += val * vec_val
+        "MUL $t8, $t5, $t6",        // 24: $t8 = val * vec_val
+        "ADD $t3, $t3, $t8",        // 25: sum += $t8
+        
+        // j++
+        "ADDI $t2, $t2, 1",         // 26: j++
+        
+        // Jump back to inner_loop (index 14)
+        // offset = 14 - 27 - 1 = -14
+        "BEQ $zero, $zero, -14",    // 27: -> inner_loop
+        
+        // ============================================================
+        // END INNER LOOP (index 28)
+        // ============================================================
+        // end_inner:
+        
+        // Store sum to vector_y[i]
+        // Calculate address of vector_y[i]: $t7 = vector_y + i*4
+        "SLL $t7, $s6, 2",          // 28: $t7 = i * 4
+        "ADD $t7, $s4, $t7",        // 29: $t7 = vector_y + i*4
+        "SW $t3, 0($t7)",           // 30: vector_y[i] = sum
+        
+        // i++
+        "ADDI $s6, $s6, 1",         // 31: i++
+        
+        // Jump back to outer_loop (index 7)
+        // offset = 7 - 32 - 1 = -26
+        "BEQ $zero, $zero, -26",    // 32: -> outer_loop
+        
+        // ============================================================
+        // DONE (index 33)
+        // ============================================================
+        // done:
+        "ADDI $s7, $zero, 1",       // 33: done marker
+    });
+    
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        prog[i] = instructions[i];
+    }
+    
+    // ============================================================
+    // DATA SECTION
+    // ============================================================
+    
+    // row_ptr at address 2048 (word index 512)
+    // row_ptr = [0, 1, 2, 4]
+    prog[512] = 0;   // row 0 starts at index 0
+    prog[513] = 1;   // row 1 starts at index 1
+    prog[514] = 2;   // row 2 starts at index 2
+    prog[515] = 4;   // end marker (total non-zeros = 4)
+    
+    // col_ind at address 2064 (word index 516)
+    // col_ind = [0, 1, 0, 2]
+    prog[516] = 0;   // A[0,0] = 5 is in column 0
+    prog[517] = 1;   // A[1,1] = 8 is in column 1
+    prog[518] = 0;   // A[2,0] = 2 is in column 0
+    prog[519] = 2;   // A[2,2] = 3 is in column 2
+    
+    // values at address 2080 (word index 520)
+    // values = [5, 8, 2, 3]
+    prog[520] = 5;   // A[0,0]
+    prog[521] = 8;   // A[1,1]
+    prog[522] = 2;   // A[2,0]
+    prog[523] = 3;   // A[2,2]
+    
+    // vector_x at address 2096 (word index 524)
+    // vector_x = [2, 1, 4]
+    prog[524] = 2;   // x[0]
+    prog[525] = 1;   // x[1]
+    prog[526] = 4;   // x[2]
+    
+    // vector_y at address 2112 (word index 528) - output, initialized to 0
+    prog[528] = 0;   // y[0]
+    prog[529] = 0;   // y[1]
+    prog[530] = 0;   // y[2]
+    
+    Mips cpu(prog);
+    
+    std::cerr << "\n=== SpMV Memory Wall Stress Test ===" << std::endl;
+    std::cerr << "Matrix A (3x3 sparse):" << std::endl;
+    std::cerr << "  [ 5  0  0 ]" << std::endl;
+    std::cerr << "  [ 0  8  0 ]" << std::endl;
+    std::cerr << "  [ 2  0  3 ]" << std::endl;
+    std::cerr << "Vector X: [2, 1, 4]" << std::endl;
+    std::cerr << "Expected Y: [10, 8, 16]" << std::endl;
+    
+    cpu.run(1000);
+    
+    auto stats = cpu.get_stats();
+    
+    // Read results from vector_y
+    uint32_t y0 = cpu.get_memory(2112);
+    uint32_t y1 = cpu.get_memory(2116);
+    uint32_t y2 = cpu.get_memory(2120);
+    
+    std::cerr << "\n=== Results ===" << std::endl;
+    std::cerr << "Y[0] = " << y0 << " (expected 10)" << std::endl;
+    std::cerr << "Y[1] = " << y1 << " (expected 8)" << std::endl;
+    std::cerr << "Y[2] = " << y2 << " (expected 16)" << std::endl;
+    
+    std::cerr << "\n=== Memory Wall Metrics ===" << std::endl;
+    std::cerr << "Total cycles: " << stats.cycles << std::endl;
+    std::cerr << "Instructions committed: " << stats.instructions_committed << std::endl;
+    std::cerr << "Memory accesses: " << stats.memory_accesses << std::endl;
+    std::cerr << "Fetch stalls: " << stats.fetch_stalls << std::endl;
+    std::cerr << "Data stalls: " << stats.data_stalls << std::endl;
+    std::cerr << "Memory contention ratio: " 
+              << (stats.get_memory_contention_ratio() * 100) << "%" << std::endl;
+    std::cerr << "Branch mispredictions: " << stats.branch_mispredictions << std::endl;
+    std::cerr << "IPC: " << stats.get_ipc() << std::endl;
+    
+    // Verify correctness
+    EXPECT_EQ(y0, 10u) << "Y[0] = 5*2 = 10";
+    EXPECT_EQ(y1, 8u)  << "Y[1] = 8*1 = 8";
+    EXPECT_EQ(y2, 16u) << "Y[2] = 2*2 + 3*4 = 16";
+    
+    EXPECT_EQ(cpu.get_register(23), 1u) << "Done marker should be set";
+    
+    // Thesis metrics: SpMV should exhibit significant memory stalls
+    EXPECT_GT(stats.memory_accesses, 10u)
+        << "SpMV requires many memory accesses";
+    EXPECT_GT(stats.fetch_stalls, 0u)
+        << "Dependent loads should cause pipeline stalls";
+}
+
+TEST_F(EmulatorTest, SpMV_LargerMatrix) {
+    // Larger 4x4 sparse matrix to show more memory wall effects
+    //
+    // Matrix A (4x4):
+    // [ 1  0  2  0 ]
+    // [ 0  3  0  4 ]
+    // [ 5  0  6  0 ]
+    // [ 0  7  0  8 ]
+    //
+    // Vector X: [1, 2, 3, 4]
+    //
+    // Expected Y:
+    //   y[0] = 1*1 + 2*3 = 7
+    //   y[1] = 3*2 + 4*4 = 22
+    //   y[2] = 5*1 + 6*3 = 23
+    //   y[3] = 7*2 + 8*4 = 46
+    //
+    // CSR:
+    //   row_ptr = [0, 2, 4, 6, 8]
+    //   col_ind = [0, 2, 1, 3, 0, 2, 1, 3]
+    //   values  = [1, 2, 3, 4, 5, 6, 7, 8]
+    
+    std::array<uint32_t, 4096> prog{};
+    
+    auto instructions = assembler_.assemble({
+        // INITIALIZATION
+        "ADDI $s0, $zero, 2048",    // row_ptr base
+        "ADDI $s1, $zero, 2080",    // col_ind base (2048 + 32)
+        "ADDI $s2, $zero, 2112",    // values base (2080 + 32)
+        "ADDI $s3, $zero, 2144",    // vector_x base (2112 + 32)
+        "ADDI $s4, $zero, 2160",    // vector_y base (2144 + 16)
+        "ADDI $s5, $zero, 4",       // NUM_ROWS = 4
+        "ADDI $s6, $zero, 0",       // i = 0
+        
+        // OUTER LOOP
+        "BEQ $s6, $s5, 25",         // if i == NUM_ROWS -> done
+        "SLL $t7, $s6, 2",
+        "ADD $t7, $s0, $t7",
+        "LW $t0, 0($t7)",           // start_idx
+        "LW $t1, 4($t7)",           // end_idx
+        "ADDI $t3, $zero, 0",       // sum = 0
+        "ADD $t2, $t0, $zero",      // j = start_idx
+        
+        // INNER LOOP
+        "BEQ $t2, $t1, 13",         // if j == end_idx -> end_inner
+        "SLL $t7, $t2, 2",
+        "ADD $t7, $s1, $t7",
+        "LW $t4, 0($t7)",           // col = col_ind[j]
+        "SLL $t7, $t2, 2",
+        "ADD $t7, $s2, $t7",
+        "LW $t5, 0($t7)",           // val = values[j]
+        // CRITICAL: Memory Wall / Dependent Load Stall
+        "SLL $t7, $t4, 2",          // col * 4 (depends on loaded col!)
+        "ADD $t7, $s3, $t7",
+        "LW $t6, 0($t7)",           // vec_val = vector_x[col]
+        "MUL $t8, $t5, $t6",
+        "ADD $t3, $t3, $t8",
+        "ADDI $t2, $t2, 1",
+        "BEQ $zero, $zero, -14",
+        
+        // END INNER
+        "SLL $t7, $s6, 2",
+        "ADD $t7, $s4, $t7",
+        "SW $t3, 0($t7)",           // vector_y[i] = sum
+        "ADDI $s6, $s6, 1",
+        "BEQ $zero, $zero, -26",
+        
+        // DONE
+        "ADDI $s7, $zero, 1",
+    });
+    
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        prog[i] = instructions[i];
+    }
+    
+    // row_ptr at 2048 (word 512): [0, 2, 4, 6, 8]
+    prog[512] = 0; prog[513] = 2; prog[514] = 4; prog[515] = 6; prog[516] = 8;
+    
+    // col_ind at 2080 (word 520): [0, 2, 1, 3, 0, 2, 1, 3]
+    prog[520] = 0; prog[521] = 2; prog[522] = 1; prog[523] = 3;
+    prog[524] = 0; prog[525] = 2; prog[526] = 1; prog[527] = 3;
+    
+    // values at 2112 (word 528): [1, 2, 3, 4, 5, 6, 7, 8]
+    prog[528] = 1; prog[529] = 2; prog[530] = 3; prog[531] = 4;
+    prog[532] = 5; prog[533] = 6; prog[534] = 7; prog[535] = 8;
+    
+    // vector_x at 2144 (word 536): [1, 2, 3, 4]
+    prog[536] = 1; prog[537] = 2; prog[538] = 3; prog[539] = 4;
+    
+    // vector_y at 2160 (word 540): [0, 0, 0, 0]
+    prog[540] = 0; prog[541] = 0; prog[542] = 0; prog[543] = 0;
+    
+    Mips cpu(prog);
+    
+    std::cerr << "\n=== SpMV Larger Matrix Test ===" << std::endl;
+    std::cerr << "4x4 sparse matrix with 8 non-zeros" << std::endl;
+    std::cerr << "Expected Y: [7, 22, 23, 46]" << std::endl;
+    
+    cpu.run(2000);
+    
+    auto stats = cpu.get_stats();
+    
+    uint32_t y0 = cpu.get_memory(2160);
+    uint32_t y1 = cpu.get_memory(2164);
+    uint32_t y2 = cpu.get_memory(2168);
+    uint32_t y3 = cpu.get_memory(2172);
+    
+    std::cerr << "\n=== Results ===" << std::endl;
+    std::cerr << "Y = [" << y0 << ", " << y1 << ", " << y2 << ", " << y3 << "]" << std::endl;
+    
+    std::cerr << "\n=== Memory Wall Metrics ===" << std::endl;
+    std::cerr << "Total cycles: " << stats.cycles << std::endl;
+    std::cerr << "Memory accesses: " << stats.memory_accesses << std::endl;
+    std::cerr << "Fetch stalls: " << stats.fetch_stalls << std::endl;
+    std::cerr << "Data stalls: " << stats.data_stalls << std::endl;
+    std::cerr << "Memory contention: " 
+              << (stats.get_memory_contention_ratio() * 100) << "%" << std::endl;
+    std::cerr << "IPC: " << stats.get_ipc() << std::endl;
+    
+    EXPECT_EQ(y0, 7u);
+    EXPECT_EQ(y1, 22u);
+    EXPECT_EQ(y2, 23u);
+    EXPECT_EQ(y3, 46u);
+    
+    EXPECT_EQ(cpu.get_register(23), 1u);
+    
+    // More non-zeros = more dependent loads = more stalls
+    EXPECT_GT(stats.memory_accesses, 20u);
+}
+
+TEST_F(EmulatorTest, SpMV_DenseRow) {
+    // Test with one dense row to maximize memory wall effect
+    //
+    // Matrix A (2x4):
+    // [ 1  2  3  4 ]   <- Dense row (4 non-zeros)
+    // [ 0  5  0  0 ]   <- Sparse row (1 non-zero)
+    //
+    // Vector X: [1, 2, 3, 4]
+    //
+    // Expected Y:
+    //   y[0] = 1*1 + 2*2 + 3*3 + 4*4 = 1 + 4 + 9 + 16 = 30
+    //   y[1] = 5*2 = 10
+    //
+    // CSR:
+    //   row_ptr = [0, 4, 5]
+    //   col_ind = [0, 1, 2, 3, 1]
+    //   values  = [1, 2, 3, 4, 5]
+    
+    std::array<uint32_t, 4096> prog{};
+    
+    auto instructions = assembler_.assemble({
+        "ADDI $s0, $zero, 2048",    // row_ptr
+        "ADDI $s1, $zero, 2064",    // col_ind
+        "ADDI $s2, $zero, 2088",    // values
+        "ADDI $s3, $zero, 2112",    // vector_x
+        "ADDI $s4, $zero, 2128",    // vector_y
+        "ADDI $s5, $zero, 2",       // NUM_ROWS = 2
+        "ADDI $s6, $zero, 0",       // i = 0
+        
+        "BEQ $s6, $s5, 25",
+        "SLL $t7, $s6, 2",
+        "ADD $t7, $s0, $t7",
+        "LW $t0, 0($t7)",
+        "LW $t1, 4($t7)",
+        "ADDI $t3, $zero, 0",
+        "ADD $t2, $t0, $zero",
+        
+        "BEQ $t2, $t1, 13",
+        "SLL $t7, $t2, 2",
+        "ADD $t7, $s1, $t7",
+        "LW $t4, 0($t7)",
+        "SLL $t7, $t2, 2",
+        "ADD $t7, $s2, $t7",
+        "LW $t5, 0($t7)",
+        // CRITICAL: Memory Wall / Dependent Load Stall
+        "SLL $t7, $t4, 2",
+        "ADD $t7, $s3, $t7",
+        "LW $t6, 0($t7)",
+        "MUL $t8, $t5, $t6",
+        "ADD $t3, $t3, $t8",
+        "ADDI $t2, $t2, 1",
+        "BEQ $zero, $zero, -14",
+        
+        "SLL $t7, $s6, 2",
+        "ADD $t7, $s4, $t7",
+        "SW $t3, 0($t7)",
+        "ADDI $s6, $s6, 1",
+        "BEQ $zero, $zero, -26",
+        
+        "ADDI $s7, $zero, 1",
+    });
+    
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        prog[i] = instructions[i];
+    }
+    
+    // row_ptr at 2048
+    prog[512] = 0; prog[513] = 4; prog[514] = 5;
+    
+    // col_ind at 2064
+    prog[516] = 0; prog[517] = 1; prog[518] = 2; prog[519] = 3; prog[520] = 1;
+    
+    // values at 2088
+    prog[522] = 1; prog[523] = 2; prog[524] = 3; prog[525] = 4; prog[526] = 5;
+    
+    // vector_x at 2112
+    prog[528] = 1; prog[529] = 2; prog[530] = 3; prog[531] = 4;
+    
+    // vector_y at 2128
+    prog[532] = 0; prog[533] = 0;
+    
+    Mips cpu(prog);
+    
+    std::cerr << "\n=== SpMV Dense Row Test ===" << std::endl;
+    std::cerr << "First row is dense (4 elements) - maximum dependent loads" << std::endl;
+    std::cerr << "Expected Y: [30, 10]" << std::endl;
+    
+    cpu.run(1000);
+    
+    auto stats = cpu.get_stats();
+    
+    uint32_t y0 = cpu.get_memory(2128);
+    uint32_t y1 = cpu.get_memory(2132);
+    
+    std::cerr << "Y = [" << y0 << ", " << y1 << "]" << std::endl;
+    std::cerr << "Cycles: " << stats.cycles << ", IPC: " << stats.get_ipc() << std::endl;
+    std::cerr << "Memory accesses: " << stats.memory_accesses << std::endl;
+    std::cerr << "Fetch stalls: " << stats.fetch_stalls << std::endl;
+    
+    EXPECT_EQ(y0, 30u);
+    EXPECT_EQ(y1, 10u);
+    EXPECT_EQ(cpu.get_register(23), 1u);
+    
+    // Dense row with 4 indirect accesses should cause noticeable stalls
+    EXPECT_GT(stats.fetch_stalls, 0u)
+        << "Dense row should cause memory contention";
+}
+
+// ...existing code...
+
+
+TEST_F(EmulatorTest, LatencyConfigTest) {
+    std::array<uint32_t, 4096> prog{};
+    
+    auto instructions = assembler_.assemble({
+        "ADDI $t0, $zero, 100",    // t0 = 100
+        "SW $t0, 2048($zero)",     // mem[2048] = 100
+        "LW $t1, 2048($zero)",     // t1 = mem[2048]
+        "ADDI $s7, $zero, 1",      // done
+    });
+    
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        prog[i] = instructions[i];
+    }
+    
+    // Test with default config
+    {
+        Mips cpu(prog);
+        cpu.run(100);
+        std::cerr << "Default config: $t1 = " << cpu.get_register(9) << std::endl;
+        EXPECT_EQ(cpu.get_register(9), 100u);
+    }
+    
+    // Test with higher latency
+    {
+        MipsConfig config;
+        config.mem_latency = 200;
+        Mips cpu(prog, config);
+        cpu.run(200);  // More cycles for higher latency
+        std::cerr << "mem_latency=10: $t1 = " << cpu.get_register(9) << std::endl;
+        EXPECT_EQ(cpu.get_register(9), 100u) << "Result should be same regardless of latency!";
+    }
+}
