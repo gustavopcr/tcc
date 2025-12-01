@@ -87,22 +87,7 @@ void Mips::tick() {
                           no_pending_load && 
                           no_pending_store && 
                           !data_mem_active;
-    
-    // DEBUG: Print halt condition state
-    if (pipeline_empty || idle_cycles_ > 0) {
-        std::cerr << "Cycle " << stats_.cycles << " halt check:"
-                  << " fetch_end=" << fetch_stalled_at_end
-                  << " buf_empty=" << buffers_empty  
-                  << " rob_empty=" << rob_empty
-                  << " rs_empty=" << rs_empty
-                  << " eu_idle=" << eu_idle
-                  << " no_pend_ld=" << no_pending_load
-                  << " no_pend_st=" << no_pending_store
-                  << " !data_mem=" << !data_mem_active
-                  << " idle=" << idle_cycles_
-                  << std::endl;
-    }
-    
+        
     if (pipeline_empty) {
         idle_cycles_++;
         if (idle_cycles_ >= 10) {
