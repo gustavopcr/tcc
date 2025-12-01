@@ -61,6 +61,9 @@ public:
     // NEW: Flush support
     void flush();
 
+    bool was_rob_stall() const { return last_rob_stall_; }
+    bool was_rs_stall() const { return last_rs_stall_; }
+
 private:
     Operand rename_source(uint8_t arch_reg);
     
@@ -70,6 +73,8 @@ private:
     ReservationStation& alu_rs_;
     ReservationStation& mem_rs_;                   // NEW: memory RS
     std::array<uint32_t, 32>& arf_;
+    bool last_rob_stall_ = false;
+    bool last_rs_stall_ = false;
 };
 
 class IssueStage {
@@ -83,12 +88,15 @@ public:
     
     // NEW: Flush support
     void flush();
+    bool was_eu_stall() const { return last_eu_stall_; }
 
 private:
     ReservationStation& alu_rs_;
     ReservationStation& mem_rs_;
     ExecutionUnit& alu_eu_;
     ExecutionUnit& mem_eu_;
+
+    bool last_eu_stall_ = false;
 };
 
 class ExecuteStage {

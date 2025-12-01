@@ -215,14 +215,19 @@ Operand DispatchStage::rename_source(uint8_t arch_reg) {
 
 void DispatchStage::tick() {
     if (in_buffer_.uops.empty()) return;
-    if (rob_.is_full()) return;
-    
+    if (rob_.is_full()) {
+        last_rob_stall_ = true;
+        return;
+    }
     const Uop& uop = in_buffer_.uops.front();
 
     // Select appropriate reservation station
     ReservationStation& target_rs = (uop.is_load || uop.is_store) ? mem_rs_ : alu_rs_;
     
-    if (target_rs.is_full()) return;
+    if (target_rs.is_full()) {
+      last_rs_stall_ = true;
+      return;
+    }
     
     // Allocate ROB entry
     auto rob_id_opt = rob_.allocate(uop.pc, uop.alu_op, uop.arch_dest);
@@ -310,6 +315,8 @@ IssueStage::IssueStage(ReservationStation& alu_rs,
 
 void IssueStage::tick() {
     // Try to issue from ALU RS
+    last_eu_stall_ = false;
+
     if (!alu_eu_.is_busy()) {
         auto ready_idx = alu_rs_.find_ready();
         if (ready_idx) {
@@ -336,6 +343,12 @@ void IssueStage::tick() {
             alu_eu_.start_execution(inst);
         }
     }
+    else
+    {
+      if (alu_rs_.find_ready()) {
+        last_eu_stall_ = true;
+      }
+    }
     
     // Try to issue from Memory RS
     if (!mem_eu_.is_busy()) {
@@ -356,6 +369,12 @@ void IssueStage::tick() {
             
             mem_eu_.start_execution(inst);
         }
+    }
+    else
+    {
+      if (mem_rs_.find_ready()) {
+        last_eu_stall_ = true;
+      }
     }
 }
 void IssueStage::flush() {

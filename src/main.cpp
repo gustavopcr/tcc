@@ -31,6 +31,7 @@ int main()
   std::cout << "Fetch stalls due to data access: " << stats.fetch_stalls << "\n";
   std::cout << "Total memory accesses: " << stats.memory_accesses << "\n";
   std::cout << "IPC: " << stats.get_ipc() << "\n";
-    
+    std::cout << "Memory Contention Ratio: " 
+          << (stats.get_memory_contention_ratio() * 100) << "%" << std::endl;
     return 0;
 }

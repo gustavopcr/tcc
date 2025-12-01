@@ -70,18 +70,37 @@ void Mips::tick() {
     stats_.data_stalls = mem_bus_.get_data_stall_cycles();
     stats_.memory_accesses = mem_bus_.get_total_accesses();
     
+    if (dispatch_stage_->was_rob_stall()) stats_.rob_full_stalls++;
+    if (dispatch_stage_->was_rs_stall()) stats_.rs_full_stalls++;
+    if (issue_stage_->was_eu_stall()) stats_.eu_busy_stalls++;
+
     if(stats_.cycles < 10) return;
-    if (cycles_since_flush_ < 10) {
+    if (cycles_since_flush_ < 15) {
         cycles_since_flush_++;
         return;
     }
-    // Check for halt condition (no more work)
-    if (fetch_buffer_.instructions.empty() &&
-        decode_buffer_.uops.empty() &&
-        rob_.is_empty() &&
-        !execute_stage_->has_pending_load() &&
-        !commit_stage_->has_pending_store()) {
-        halted_ = true;
+        // Check if pipeline is truly idle (no work anywhere)
+    bool fetch_done = fetch_stage_->is_stalled();
+    bool buffers_empty = fetch_buffer_.instructions.empty() && 
+                         decode_buffer_.uops.empty();
+    bool rob_empty = rob_.is_empty();
+    bool rs_empty = alu_rs_.is_empty() && mem_rs_.is_empty();
+    bool eu_idle = !alu_eu_.is_busy() && !mem_eu_.is_busy();
+    bool no_pending_mem = !execute_stage_->has_pending_load() && 
+                          !commit_stage_->has_pending_store();
+    
+    // All conditions must be true simultaneously
+    bool pipeline_empty = fetch_done && buffers_empty && rob_empty && 
+                          rs_empty && eu_idle && no_pending_mem;
+    
+    if (pipeline_empty) {
+        // Double-check: require multiple consecutive idle cycles
+        idle_cycles_++;
+        if (idle_cycles_ >= 3) {
+            halted_ = true;
+        }
+    } else {
+        idle_cycles_ = 0;
     }
 }
 

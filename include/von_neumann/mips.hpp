@@ -27,9 +27,20 @@ struct MipsStats {
     uint64_t data_stalls = 0;
     uint64_t branch_mispredictions = 0;
     uint64_t memory_accesses = 0;
+
+    uint64_t rob_full_stalls = 0;      // Dispatch blocked by full ROB
+    uint64_t rs_full_stalls = 0;       // Dispatch blocked by full RS
+    uint64_t eu_busy_stalls = 0;       // Issue blocked by busy EU
     
     double get_ipc() const {
         return cycles > 0 ? static_cast<double>(instructions_committed) / cycles : 0.0;
+    }
+    uint64_t get_total_stalls() const {
+      return fetch_stalls + data_stalls + rob_full_stalls + rs_full_stalls + eu_busy_stalls;
+    }
+    double get_memory_contention_ratio() const {
+      uint64_t total = get_total_stalls();
+      return total > 0 ? static_cast<double>(fetch_stalls) / total : 0.0;
     }
 };
 
@@ -84,7 +95,8 @@ private:
     MipsStats stats_;
     MipsConfig config_;
 
-    uint32_t cycles_since_flush_ = 10;
+    uint32_t cycles_since_flush_ = 100;
+    uint32_t idle_cycles_ = 0;  // NEW: Reset idle counter on flush
 };
 
 #endif

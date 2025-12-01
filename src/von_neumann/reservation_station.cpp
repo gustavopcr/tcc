@@ -55,6 +55,15 @@ bool ReservationStation::is_full() const {
     return true;
 }
 
+bool ReservationStation::is_empty() const {
+    for (const auto& entry : entries_) {
+        if (entry.is_busy) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void ReservationStation::flush() {
     for (auto& entry : entries_) {
         entry.is_busy = false;

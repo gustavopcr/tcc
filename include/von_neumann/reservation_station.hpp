@@ -22,6 +22,7 @@ public:
     
     // Status
     bool is_full() const;
+    bool is_empty() const;  // NEW: Add this method
     void flush();
 
 private:
