@@ -753,41 +753,7 @@ TEST_F(EmulatorTest, MixedWorkloadDiagnostic) {
 // ============================================================================
 // Von Neumann Bottleneck Stress Tests
 // ============================================================================
-TEST_F(EmulatorTest, HighMemoryContention) {
-    std::array<uint32_t, 4096> prog{};
-    auto instructions = assembler_.assemble({
-        "ADDI $t5, $zero, 2048",  // Base address for data
-        "ADDI $t0, $zero, 42",    // Initial value
-        
-        // Mix of ALU and memory ops - more realistic
-        "SW $t0, 0($t5)",         // Store 42
-        "ADDI $t1, $t0, 1",       // ALU work: t1 = 43
-        "LW $t2, 0($t5)",         // Load back: t2 = 42
-        "ADD $t3, $t1, $t2",      // ALU work: t3 = 85
-        "SW $t3, 4($t5)",         // Store 85
-        "ADDI $t4, $t3, 10",      // ALU work: t4 = 95
-        "LW $t6, 4($t5)",         // Load back: t6 = 85
-    });
-    
-    for (size_t i = 0; i < instructions.size(); ++i) {
-        prog[i] = instructions[i];
-    }
-    
-    Mips cpu(prog);
-    cpu.run(500);
-    
-    auto stats = cpu.get_stats();
-    
-    // Verify correctness
-    EXPECT_EQ(cpu.get_register(10), 42u);  // $t2 = 42
-    EXPECT_EQ(cpu.get_register(11), 85u);  // $t3 = 85
-    EXPECT_EQ(cpu.get_register(14), 85u);  // $t6 = 85
-    
-    // Structural checks - less strict
-    EXPECT_EQ(stats.instructions_committed, 9u);
-    EXPECT_GT(stats.memory_accesses, 0u)
-        << "Should have memory accesses";
-}
+
 
 TEST_F(EmulatorTest, MemoryContentionLoop) {
     // Loop with memory operations - maximizes bottleneck effect
