@@ -2,8 +2,8 @@
 
 std::optional<RobIndex> ReorderBuffer::allocate(uint32_t pc, AluOperation op, uint8_t arch_dest) {
     if (is_full()) return std::nullopt;
-    
-    RobIndex idx = static_cast<RobIndex>(tail_ + 1);
+    RobIndex idx = next_seq_++;  // Use monotonically increasing ID
+    if (next_seq_ == 0) next_seq_ = 1;  // Skip 0 on wrap (unlikely with uint16_t)
     entries_[tail_].state = RobState::Issued;
     entries_[tail_].pc = pc;
     entries_[tail_].op = op;
@@ -11,28 +11,27 @@ std::optional<RobIndex> ReorderBuffer::allocate(uint32_t pc, AluOperation op, ui
     entries_[tail_].has_result = false;
     entries_[tail_].is_store = false;
     entries_[tail_].has_exception = false;
-    
+    entries_[tail_].seq_id = idx;  // ADD: Store sequence ID in entry
     tail_ = (tail_ + 1) % ROB_SIZE;
     count_++;
     
     return idx;
 }
-
 void ReorderBuffer::write_result(RobIndex rob_id, uint32_t value) {
-    if (rob_id == 0 || rob_id > ROB_SIZE) return;
-    size_t idx = rob_id - 1;
-    entries_[idx].has_result = true;
-    entries_[idx].result_value = value;
-    entries_[idx].state = RobState::WriteBack;
+    RobEntry* entry = get_entry(rob_id);
+    if (!entry) return;
+    entry->has_result = true;
+    entry->result_value = value;
+    entry->state = RobState::WriteBack;
 }
 
 void ReorderBuffer::prepare_store(RobIndex rob_id, uint32_t address, uint32_t data) {
-    if (rob_id == 0 || rob_id > ROB_SIZE) return;
-    size_t idx = rob_id - 1;
-    entries_[idx].is_store = true;
-    entries_[idx].store_address = address;
-    entries_[idx].store_data = data;
-    entries_[idx].state = RobState::WriteBack;
+    RobEntry* entry = get_entry(rob_id);
+    if (!entry) return;
+    entry->is_store = true;
+    entry->store_address = address;
+    entry->store_data = data;
+    entry->state = RobState::WriteBack;
 }
 
 RobEntry* ReorderBuffer::get_head() {
@@ -42,24 +41,30 @@ RobEntry* ReorderBuffer::get_head() {
 
 RobIndex ReorderBuffer::get_head_index() const {
     if (count_ == 0) return INVALID_ROB_INDEX;
-    return static_cast<RobIndex>(head_ + 1);
+    return entries_[head_].seq_id;  // CHANGE: Return sequence ID
 }
 
 void ReorderBuffer::commit_head() {
     if (count_ == 0) return;
     entries_[head_].state = RobState::Invalid;
+    entries_[head_].seq_id = INVALID_ROB_INDEX;  // Clear the seq_id
     head_ = (head_ + 1) % ROB_SIZE;
     count_--;
 }
 
 RobEntry* ReorderBuffer::get_entry(RobIndex rob_id) {
-    if (rob_id == 0 || rob_id > ROB_SIZE) return nullptr;
-    return &entries_[rob_id - 1];
+    if (rob_id == INVALID_ROB_INDEX) return nullptr;
+    // Search by sequence ID - no bounds check on rob_id value
+    for (size_t i = 0; i < ROB_SIZE; ++i) {
+        if (entries_[i].state != RobState::Invalid && entries_[i].seq_id == rob_id) {
+            return &entries_[i];
+        }
+    }
+    return nullptr;
 }
 
 RobEntry* ReorderBuffer::get_entry_mut(RobIndex rob_id) {
-    if (rob_id == 0 || rob_id > ROB_SIZE) return nullptr;
-    return &entries_[rob_id - 1];
+    return get_entry(rob_id);  // Same implementation
 }
 
 bool ReorderBuffer::is_full() const { return count_ >= ROB_SIZE; }

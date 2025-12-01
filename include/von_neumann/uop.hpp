@@ -7,7 +7,8 @@
 #include <optional>
 #include <deque>
 
-using RobIndex = uint8_t;
+
+using RobIndex = uint32_t;  // CHANGE: Use 32-bit to allow larger sequence numbers
 constexpr RobIndex INVALID_ROB_INDEX = 0;
 
 using PhysicalReg = uint8_t;
@@ -84,6 +85,7 @@ enum class RobState : uint8_t {
 
 struct RobEntry {
     RobState state = RobState::Invalid;
+    RobIndex seq_id = INVALID_ROB_INDEX; 
     uint32_t pc = 0;
     AluOperation op = AluOperation::ADD;
     uint8_t arch_dest = 0;

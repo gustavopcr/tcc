@@ -29,6 +29,7 @@ private:
     size_t head_ = 0;
     size_t tail_ = 0;
     size_t count_ = 0;
+    RobIndex next_seq_ = 1;  // ADD: Unique sequence number
 };
 
 #endif

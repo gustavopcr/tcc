@@ -19,7 +19,8 @@ void FetchStage::tick() {
     if (waiting_for_memory_) {
         auto response = mem_bus_.get_fetch_response();
         if (!response.valid) {
-            // Still waiting - keep the pending request
+            // Still waiting - must re-request since requests are cleared each cycle
+            mem_bus_.request_fetch(pending_pc_);
             return;
         }
         

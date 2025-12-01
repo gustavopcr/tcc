@@ -2207,3 +2207,53 @@ TEST_F(EmulatorTest, LoadStorePairInLoop) {
   EXPECT_EQ(stats.branch_mispredictions, 2u);  // 2 taken branches (iterations 1 and 2)
   EXPECT_GT(stats.fetch_stalls, 0u);           // Should see memory contention
 }
+
+
+TEST_F(EmulatorTest, DebugStuckLoop) {
+    std::array<uint32_t, 4096> program{};
+    
+    // Simple loop with one load and one store
+    // $t7 = 0x800 (base address 2048)
+    // $t5 = 0 (counter)
+    // $t6 = 3 (limit)
+    // loop:
+    //   lw $t0, 0($t7)      - load from mem[2048]
+    //   addiu $t0, $t0, 1   - increment
+    //   sw $t0, 0($t7)      - store back
+    //   addiu $t5, $t5, 1   - counter++
+    //   bne $t5, $t6, loop  - if counter != limit, loop
+    //   addiu $t2, $zero, 1 - done marker
+    
+    program[0] = 0x200f0800;  // addiu $t7, $zero, 0x800
+    program[1] = 0x200d0000;  // addiu $t5, $zero, 0
+    program[2] = 0x200e0003;  // addiu $t6, $zero, 3
+    program[3] = 0x8de80000;  // lw $t0, 0($t7)
+    program[4] = 0x21080001;  // addiu $t0, $t0, 1
+    program[5] = 0xade80000;  // sw $t0, 0($t7)
+    program[6] = 0x21ad0001;  // addiu $t5, $t5, 1
+    program[7] = 0x15aefffc;  // bne $t5, $t6, -4 (to instruction 3)
+    program[8] = 0x200a0001;  // addiu $t2, $zero, 1
+    
+    Mips cpu(program);
+    
+    for (int cycle = 0; cycle < 100; cycle++) {
+        cpu.tick();
+        
+        if (cycle >= 25 && cycle <= 50) {
+            auto& stats = cpu.get_stats();
+            std::cout << "Cycle " << cycle 
+                      << ": $t5=" << cpu.get_register(13)
+                      << ", $t0=" << cpu.get_register(8)
+                      << ", mem=" << cpu.get_memory(2048)
+                      << ", mispred=" << stats.branch_mispredictions
+                      << (cpu.is_halted() ? " [HALTED]" : "")
+                      << std::endl;
+        }
+        
+        if (cpu.is_halted()) break;
+    }
+    
+    std::cout << "\nFinal: $t5=" << cpu.get_register(13) 
+              << ", $t2=" << cpu.get_register(10)
+              << ", mem[2048]=" << cpu.get_memory(2048) << std::endl;
+}
