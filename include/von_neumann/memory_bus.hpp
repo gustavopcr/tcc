@@ -51,6 +51,10 @@ public:
     uint64_t get_fetch_stall_cycles() const { return fetch_stall_cycles_; }
     uint64_t get_data_stall_cycles() const { return data_stall_cycles_; }
     uint64_t get_total_accesses() const { return total_accesses_; }
+    bool was_busy_this_cycle() const {
+        return granted_ != MemoryRequester::None;
+    }
+    MemoryRequester get_granted() const { return granted_; }
 
 private:
     Memory& memory_;

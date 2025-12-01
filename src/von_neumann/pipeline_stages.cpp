@@ -402,6 +402,8 @@ void ExecuteStage::tick() {
     // Handle pending load waiting for memory
     if (pending_load_) {
         auto response = mem_bus_.get_load_response();
+        std::cerr << "  [EXEC] pending_load for addr=" << pending_load_->address 
+                  << ", response.valid=" << response.valid << std::endl;
         if (response.valid) {
             // Load completed - broadcast result
             cdb_.push({pending_load_->rob_id, response.data});
@@ -427,7 +429,8 @@ void ExecuteStage::tick() {
     // Check ALU EU for completed instructions
     if (alu_eu_.has_result()) {
         ExecutionResult result = alu_eu_.get_result();
-        
+                std::cerr << "  [EXEC] ALU result: rob_id=" << result.rob_id 
+                  << ", value=" << result.value << std::endl;
         if (result.is_branch) {
             // Branch result - update ROB with outcome
             RobEntry* entry = rob_.get_entry(result.rob_id);
@@ -454,7 +457,11 @@ void ExecuteStage::tick() {
     // Check Memory EU for completed address calculations
     if (mem_eu_.has_result()) {
         ExecutionResult result = mem_eu_.get_result();
-        
+                std::cerr << "  [EXEC] MEM result: rob_id=" << result.rob_id 
+                  << ", is_load=" << result.is_load 
+                  << ", is_store=" << result.is_store
+                  << ", addr=" << (result.is_load ? result.load_address : result.store_address)
+                  << std::endl;
         if (result.is_load) {
             // Load: address calculated, now need to access memory
             pending_load_ = PendingMemoryOp{
@@ -465,6 +472,7 @@ void ExecuteStage::tick() {
                 0
             };
             mem_bus_.request_load(result.load_address);
+             std::cerr << "  [EXEC] Created pending_load for addr=" << result.load_address << std::endl;
             
             RobEntry* entry = rob_.get_entry(result.rob_id);
             if (entry) {
@@ -563,4 +571,5 @@ void CommitStage::tick() {
     }
     
     rob_.commit_head();
+    committed_this_cycle_ = true;
 }

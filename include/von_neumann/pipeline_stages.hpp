@@ -23,6 +23,8 @@ public:
     // NEW: Branch misprediction handling
     void flush_and_redirect(uint32_t new_pc);
     uint32_t get_pc() const { return pc_; }
+    bool is_waiting_for_memory() const { return waiting_for_memory_; }  // NEW
+    
 
 private:
     MemoryBus& mem_bus_;
@@ -138,7 +140,8 @@ public:
     
     // NEW: Check if store is waiting for memory
     bool has_pending_store() const { return pending_store_.has_value(); }
-
+     bool did_commit() const { return committed_this_cycle_; }  // ADD THIS
+    
 private:
     ReorderBuffer& rob_;
     RegisterAliasTable& rat_;
@@ -148,6 +151,7 @@ private:
     
     // NEW: Track pending store waiting for memory
     std::optional<PendingMemoryOp> pending_store_;
+    bool committed_this_cycle_ = false;  // ADD THIS
 };
 
 #endif
