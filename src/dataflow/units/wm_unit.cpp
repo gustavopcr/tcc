@@ -78,3 +78,11 @@ bool WmUnit::is_idle() const
 {
   return waiting_token_mem_.empty();
 }
+
+uint64_t WmUnit::get_current_occupancy() const {
+    uint64_t total = 0;
+    for (const auto& [tag, tokens] : waiting_token_mem_) {
+        total += tokens.size();
+    }
+    return total;
+}

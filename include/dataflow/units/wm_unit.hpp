@@ -15,6 +15,7 @@ public:
   void tick(Token token);
   std::vector<size_t> get_work_nodes(); // returns id of nodes that can go to instruction fetch
   bool is_idle() const;
+  uint64_t get_current_occupancy() const;
 
 private:
   MatchedToken match_token(const std::vector<Token>& tokens);

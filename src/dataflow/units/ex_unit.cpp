@@ -59,12 +59,14 @@ void ExUnit::execute(AluSlot& as) {
             if (!as.package.destinations.empty()) {
                 auto d = as.package.destinations[0];
                 token_queue_.emplace(Token{as.package.fp, d.ip, d.port, data});
+              ++tokens_produced_this_cycle_;
             }
         } else {
             // False Path -> Dest 1
             if (as.package.destinations.size() > 1) {
                 auto d = as.package.destinations[1];
                 token_queue_.emplace(Token{as.package.fp, d.ip, d.port, data});
+                ++tokens_produced_this_cycle_;
             }
         }
         return; 
@@ -86,6 +88,7 @@ void ExUnit::execute(AluSlot& as) {
             if (i < as.package.destinations.size() - 1) { // -1 because last dest is linkage
                 auto d = as.package.destinations[i];
                 token_queue_.emplace(Token{new_fp, d.ip, d.port, ops[i]});
+                ++tokens_produced_this_cycle_;
             }
         }
 
@@ -94,8 +97,10 @@ void ExUnit::execute(AluSlot& as) {
             auto d = as.package.destinations.back();
             // Port 0: Old Frame Pointer
             token_queue_.emplace(Token{new_fp, d.ip, 0, current_fp});
+            ++tokens_produced_this_cycle_;
             // Port 1: Return Node ID (Dynamic Destination)
             token_queue_.emplace(Token{new_fp, d.ip, 1, ret_node_id});
+            ++tokens_produced_this_cycle_;
         }
         return;
     }
@@ -114,7 +119,7 @@ void ExUnit::execute(AluSlot& as) {
         // Send result back to caller's context dynamically
         // We assume the caller expects the result on Port 0
         token_queue_.emplace(Token{ret_fp, ret_ip, 0, val});
-        
+        ++tokens_produced_this_cycle_;
         return;
     }
 
@@ -165,6 +170,7 @@ void ExUnit::execute(AluSlot& as) {
     // Broadcast result
     for (const auto& dest : as.package.destinations) {
         token_queue_.emplace(Token{as.package.fp, dest.ip, dest.port, result});
+        ++tokens_produced_this_cycle_;
     }
 }
 
@@ -179,4 +185,20 @@ bool ExUnit::is_idle() const
     }
   }
   return true;
+}
+
+uint64_t ExUnit::get_active_alu_count() const {
+    uint64_t count = 0;
+    for (const auto& slot : alus_) {
+        if (slot.has_value()) ++count;
+    }
+    return count;
+}
+
+uint64_t ExUnit::get_tokens_produced_this_cycle() const {
+    return tokens_produced_this_cycle_;
+}
+
+void ExUnit::reset_cycle_counters() {
+    tokens_produced_this_cycle_ = 0;
 }

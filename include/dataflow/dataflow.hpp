@@ -8,6 +8,7 @@
 #include "dataflow/units/if_unit.hpp"
 #include "dataflow/units/ex_unit.hpp"
 #include "dataflow/units/mem_unit.hpp"
+#include "dataflow/dataflow_stats.hpp"
 
 #include <queue>
 #include <string>
@@ -19,7 +20,8 @@ public:
 
   void load_program(std::string_view graph_file);
   void set_inputs(const std::vector<uint64_t>& input_data);
-  
+  const DataflowStats& get_stats() const { return stats_; }
+
 private:
   NodeGraph node_graph_;
   FiringRuleMap fr_rules_;
@@ -34,6 +36,7 @@ private:
   ExUnit ex_unit_;
 
   std::vector<std::vector<Destination>> input_destinations_;
+  DataflowStats stats_;  // NEW
 };
 
 Dataflow create_dataflow(std::string_view graph_file);

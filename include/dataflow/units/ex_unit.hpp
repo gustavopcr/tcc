@@ -5,6 +5,7 @@
 #include "dataflow/primitives/node.hpp"
 #include "dataflow/primitives/execution_pacakge.hpp"
 #include "dataflow/units/mem_unit.hpp"
+#include "dataflow/dataflow_stats.hpp"
 #include <vector>
 #include <queue>
 #include <utility>
@@ -27,6 +28,9 @@ public:
            MemoryUnit& mem_unit);
   void tick();
   bool is_idle() const;
+  uint64_t get_active_alu_count() const;
+  uint64_t get_tokens_produced_this_cycle() const;
+  void reset_cycle_counters();
 
 private:
   void execute(AluSlot& as);
@@ -35,5 +39,6 @@ private:
   std::array<std::optional<AluSlot>, ALU_AMOUNT> alus_;
   std::queue<ExecutionPackage>& execute_queue_; // input
   std::queue<Token>& token_queue_; // output
+  uint64_t tokens_produced_this_cycle_ = 0;  // NEW
 };
 #endif
