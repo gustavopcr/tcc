@@ -175,11 +175,7 @@ void Dataflow::run(const std::vector<uint64_t>& initial_data_values)
                 stats_.idle_cycles++;
             }
         }
-        std::cout << "[Dataflow::run] Cycle " << current_cycle 
-                  << " | token_queue: " << token_queue_.size()
-                  << " | matched_queue: " << matched_token_queue_.size()
-                  << " | exec_queue: " << execution_queue_.size() 
-                  << std::endl;
+
         current_cycle++; 
         
         // === TERMINATION CHECK ===
