@@ -9,7 +9,6 @@
 class MemoryUnit {
 public:
     explicit MemoryUnit(size_t size_bytes) : memory_(size_bytes, 0) {
-        std::cout << "[System] RAM Initialized with " << size_bytes << " slots." << std::endl;
     }
 
     uint64_t load(size_t address) const {
@@ -24,8 +23,6 @@ public:
             throw std::runtime_error("Segmentation Fault: STORE Access Violation at " + std::to_string(address));
         }
         memory_[address] = value;
-        // Optional: Debug print
-        // std::cout << "MEM[" << address << "] = " << value << std::endl;
     }
 
     // Helper to preload data for simulation
