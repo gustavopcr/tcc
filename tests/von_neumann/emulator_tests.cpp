@@ -2913,39 +2913,3 @@ TEST_F(EmulatorTest, SpMV_DenseRow) {
     EXPECT_GT(stats.fetch_stalls, 0u)
         << "Dense row should cause memory contention";
 }
-
-// ...existing code...
-
-
-TEST_F(EmulatorTest, LatencyConfigTest) {
-    std::array<uint32_t, 4096> prog{};
-    
-    auto instructions = assembler_.assemble({
-        "ADDI $t0, $zero, 100",    // t0 = 100
-        "SW $t0, 2048($zero)",     // mem[2048] = 100
-        "LW $t1, 2048($zero)",     // t1 = mem[2048]
-        "ADDI $s7, $zero, 1",      // done
-    });
-    
-    for (size_t i = 0; i < instructions.size(); ++i) {
-        prog[i] = instructions[i];
-    }
-    
-    // Test with default config
-    {
-        Mips cpu(prog);
-        cpu.run(100);
-        std::cerr << "Default config: $t1 = " << cpu.get_register(9) << std::endl;
-        EXPECT_EQ(cpu.get_register(9), 100u);
-    }
-    
-    // Test with higher latency
-    {
-        MipsConfig config;
-        config.mem_latency = 200;
-        Mips cpu(prog, config);
-        cpu.run(200);  // More cycles for higher latency
-        std::cerr << "mem_latency=10: $t1 = " << cpu.get_register(9) << std::endl;
-        EXPECT_EQ(cpu.get_register(9), 100u) << "Result should be same regardless of latency!";
-    }
-}

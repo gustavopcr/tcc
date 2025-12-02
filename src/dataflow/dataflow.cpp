@@ -12,7 +12,7 @@ Dataflow::Dataflow()
     , token_queue_()
     , matched_token_queue_()
     , execution_queue_()
-    , mem_unit_(1024) // Initialize 1024 words of RAM
+    , mem_unit_(4096) // Initialize 1024 words of RAM
     , wm_unit_(fr_rules_, matched_token_queue_)
     , if_unit_(matched_token_queue_, node_graph_, execution_queue_)
     , ex_unit_(execution_queue_, token_queue_, mem_unit_) // Pass MemUnit

@@ -148,17 +148,10 @@ void ExUnit::execute(AluSlot& as) {
         case Operation::EQ:   result = (ops[0] == ops[1]) ? 1 : 0; break;
         case Operation::FORK: result = ops[0]; break;
         case Operation::MERGE: 
-            // Logic: SELECT / PHI-NODE
-            // Port 0: False Value
-            // Port 1: True Value
-            // Port 2: Condition
-            if (ops.size() >= 3) {
-                result = (ops[2] != 0) ? ops[1] : ops[0]; 
-            } else {
-                // Fallback for safety or partial inputs
-                result = (ops.size() > 0) ? ops[0] : 0;
-            }
-            break; 
+          if (!ops.empty()) {
+              result = ops[0];
+          }
+          break;
         
         // --- MEMORY OPS VIA MEMORY UNIT ---
         case Operation::LOAD: 
