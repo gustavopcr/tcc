@@ -2243,3 +2243,559 @@ TEST_F(DataflowTest, SpMv_Full3x3_AllRowsParallel) {
     std::cout << "\nKey Insight: All 3 rows compute in PARALLEL!" << std::endl;
     std::cout << "Within each row, the indirect load chain is sequential." << std::endl;
 }
+
+TEST_F(DataflowTest, SpMV_LargerMatrix_4x4) {
+    // Complete SpMV: y = A * x (Same matrix as Von Neumann SpMV_LargerMatrix)
+    //
+    // Matrix A (4x4):
+    // [ 1  0  2  0 ]
+    // [ 0  3  0  4 ]
+    // [ 5  0  6  0 ]
+    // [ 0  7  0  8 ]
+    //
+    // Vector X: [1, 2, 3, 4]
+    //
+    // Expected Y:
+    //   y[0] = 1*1 + 2*3 = 7
+    //   y[1] = 3*2 + 4*4 = 22
+    //   y[2] = 5*1 + 6*3 = 23
+    //   y[3] = 7*2 + 8*4 = 46
+    //
+    // CSR:
+    //   values  = [1, 2, 3, 4, 5, 6, 7, 8]
+    //   col_ind = [0, 8, 4, 12, 0, 8, 4, 12] (pre-scaled by 4)
+    //
+    // All four rows compute in PARALLEL - this is where dataflow shines!
+    
+    write_graph(R"(
+# === MEMORY SETUP ===
+
+# values: [1, 2, 3, 4, 5, 6, 7, 8] at [100, 104, 108, 112, 116, 120, 124, 128]
+1 INPUT 0 10:0
+2 INPUT 0 10:1
+10 STORE 2 11:0
+
+3 INPUT 0 12:0
+4 INPUT 0 12:1
+12 STORE 2 13:0
+
+5 INPUT 0 14:0
+6 INPUT 0 14:1
+14 STORE 2 15:0
+
+7 INPUT 0 16:0
+8 INPUT 0 16:1
+16 STORE 2 17:0
+
+9 INPUT 0 18:0
+19 INPUT 0 18:1
+18 STORE 2 20:0
+
+21 INPUT 0 22:0
+23 INPUT 0 22:1
+22 STORE 2 24:0
+
+25 INPUT 0 26:0
+27 INPUT 0 26:1
+26 STORE 2 28:0
+
+29 INPUT 0 30:0
+31 INPUT 0 30:1
+30 STORE 2 32:0
+
+# col_ind: [0, 8, 4, 12, 0, 8, 4, 12] at [200, 204, 208, 212, 216, 220, 224, 228]
+33 INPUT 0 34:0
+35 INPUT 0 34:1
+34 STORE 2 36:0
+
+37 INPUT 0 38:0
+39 INPUT 0 38:1
+38 STORE 2 40:0
+
+41 INPUT 0 42:0
+43 INPUT 0 42:1
+42 STORE 2 44:0
+
+45 INPUT 0 46:0
+47 INPUT 0 46:1
+46 STORE 2 48:0
+
+49 INPUT 0 55:0
+56 INPUT 0 55:1
+55 STORE 2 57:0
+
+58 INPUT 0 59:0
+60 INPUT 0 59:1
+59 STORE 2 61:0
+
+62 INPUT 0 63:0
+64 INPUT 0 63:1
+63 STORE 2 65:0
+
+66 INPUT 0 67:0
+68 INPUT 0 67:1
+67 STORE 2 69:0
+
+# vector_x: [1, 2, 3, 4] at [300, 304, 308, 312]
+70 INPUT 0 71:0
+72 INPUT 0 71:1
+71 STORE 2 73:0
+
+74 INPUT 0 75:0
+76 INPUT 0 75:1
+75 STORE 2 77:0
+
+78 INPUT 0 79:0
+80 INPUT 0 79:1
+79 STORE 2 81:0
+
+82 INPUT 0 83:0
+84 INPUT 0 83:1
+83 STORE 2 85:0
+
+# Sync all stores (chain them together)
+11 FORK 1 501:0
+13 FORK 1 501:1
+501 ADD 2 502:0
+15 FORK 1 503:0
+17 FORK 1 503:1
+503 ADD 2 504:0
+502 FORK 1 505:0
+504 FORK 1 505:1
+505 ADD 2 506:0
+
+20 FORK 1 507:0
+24 FORK 1 507:1
+507 ADD 2 508:0
+28 FORK 1 509:0
+32 FORK 1 509:1
+509 ADD 2 510:0
+508 FORK 1 511:0
+510 FORK 1 511:1
+511 ADD 2 512:0
+
+506 FORK 1 513:0
+512 FORK 1 513:1
+513 ADD 2 514:0
+
+36 FORK 1 515:0
+40 FORK 1 515:1
+515 ADD 2 516:0
+44 FORK 1 517:0
+48 FORK 1 517:1
+517 ADD 2 518:0
+516 FORK 1 519:0
+518 FORK 1 519:1
+519 ADD 2 520:0
+
+57 FORK 1 521:0
+61 FORK 1 521:1
+521 ADD 2 522:0
+65 FORK 1 523:0
+69 FORK 1 523:1
+523 ADD 2 524:0
+522 FORK 1 525:0
+524 FORK 1 525:1
+525 ADD 2 526:0
+
+520 FORK 1 527:0
+526 FORK 1 527:1
+527 ADD 2 528:0
+
+514 FORK 1 529:0
+528 FORK 1 529:1
+529 ADD 2 530:0
+
+73 FORK 1 531:0
+77 FORK 1 531:1
+531 ADD 2 532:0
+81 FORK 1 533:0
+85 FORK 1 533:1
+533 ADD 2 534:0
+532 FORK 1 535:0
+534 FORK 1 535:1
+535 ADD 2 536:0
+
+530 FORK 1 537:0
+536 FORK 1 537:1
+537 ADD 2 538:0
+
+538 FORK 1 1000:0
+
+# ===================================================================
+# ROW 0: y[0] = 1*x[0] + 2*x[2] = 1*1 + 2*3 = 7
+# ===================================================================
+
+# --- Element 0: values[0] * x[col_ind[0]] ---
+
+# Load values[0]
+600 INPUT 0 601:0
+601 LOAD 1 602:0
+
+# Load col_ind[0]
+603 INPUT 0 604:0
+604 LOAD 1 605:0
+
+# x_addr = base_x + col_ind
+606 INPUT 0 607:0
+605 FORK 1 607:1
+607 ADD 2 608:0
+
+# Load x[col_ind[0]]
+608 LOAD 1 609:0
+
+# product0 = value * x_val
+602 FORK 1 610:0
+609 FORK 1 610:1
+610 MULT 2 611:0
+
+# --- Element 1: values[1] * x[col_ind[1]] ---
+
+# Load values[1]
+612 INPUT 0 613:0
+613 LOAD 1 614:0
+
+# Load col_ind[1]
+615 INPUT 0 616:0
+616 LOAD 1 617:0
+
+# x_addr = base_x + col_ind
+618 INPUT 0 619:0
+617 FORK 1 619:1
+619 ADD 2 620:0
+
+# Load x[col_ind[1]]
+620 LOAD 1 621:0
+
+# product1 = value * x_val
+614 FORK 1 622:0
+621 FORK 1 622:1
+622 MULT 2 623:0
+
+# --- Sum products ---
+611 FORK 1 624:0
+623 FORK 1 624:1
+624 ADD 2 625:0
+
+# Store y[0]
+626 INPUT 0 627:0
+625 FORK 1 627:1
+627 STORE 2 628:0
+
+628 FORK 1 900:0
+
+# ===================================================================
+# ROW 1: y[1] = 3*x[1] + 4*x[3] = 3*2 + 4*4 = 22
+# ===================================================================
+
+# --- Element 0: values[2] * x[col_ind[2]] ---
+
+# Load values[2]
+700 INPUT 0 701:0
+701 LOAD 1 702:0
+
+# Load col_ind[2]
+703 INPUT 0 704:0
+704 LOAD 1 705:0
+
+# x_addr = base_x + col_ind
+706 INPUT 0 707:0
+705 FORK 1 707:1
+707 ADD 2 708:0
+
+# Load x[col_ind[2]]
+708 LOAD 1 709:0
+
+# product0 = value * x_val
+702 FORK 1 710:0
+709 FORK 1 710:1
+710 MULT 2 711:0
+
+# --- Element 1: values[3] * x[col_ind[3]] ---
+
+# Load values[3]
+712 INPUT 0 713:0
+713 LOAD 1 714:0
+
+# Load col_ind[3]
+715 INPUT 0 716:0
+716 LOAD 1 717:0
+
+# x_addr = base_x + col_ind
+718 INPUT 0 719:0
+717 FORK 1 719:1
+719 ADD 2 720:0
+
+# Load x[col_ind[3]]
+720 LOAD 1 721:0
+
+# product1 = value * x_val
+714 FORK 1 722:0
+721 FORK 1 722:1
+722 MULT 2 723:0
+
+# --- Sum products ---
+711 FORK 1 724:0
+723 FORK 1 724:1
+724 ADD 2 725:0
+
+# Store y[1]
+726 INPUT 0 727:0
+725 FORK 1 727:1
+727 STORE 2 728:0
+
+728 FORK 1 901:0
+
+# ===================================================================
+# ROW 2: y[2] = 5*x[0] + 6*x[2] = 5*1 + 6*3 = 23
+# ===================================================================
+
+# --- Element 0: values[4] * x[col_ind[4]] ---
+
+# Load values[4]
+800 INPUT 0 801:0
+801 LOAD 1 802:0
+
+# Load col_ind[4]
+803 INPUT 0 804:0
+804 LOAD 1 805:0
+
+# x_addr = base_x + col_ind
+806 INPUT 0 807:0
+805 FORK 1 807:1
+807 ADD 2 808:0
+
+# Load x[col_ind[4]]
+808 LOAD 1 809:0
+
+# product0 = value * x_val
+802 FORK 1 810:0
+809 FORK 1 810:1
+810 MULT 2 811:0
+
+# --- Element 1: values[5] * x[col_ind[5]] ---
+
+# Load values[5]
+812 INPUT 0 813:0
+813 LOAD 1 814:0
+
+# Load col_ind[5]
+815 INPUT 0 816:0
+816 LOAD 1 817:0
+
+# x_addr = base_x + col_ind
+818 INPUT 0 819:0
+817 FORK 1 819:1
+819 ADD 2 820:0
+
+# Load x[col_ind[5]]
+820 LOAD 1 821:0
+
+# product1 = value * x_val
+814 FORK 1 822:0
+821 FORK 1 822:1
+822 MULT 2 823:0
+
+# --- Sum products ---
+811 FORK 1 824:0
+823 FORK 1 824:1
+824 ADD 2 825:0
+
+# Store y[2]
+826 INPUT 0 827:0
+825 FORK 1 827:1
+827 STORE 2 828:0
+
+828 FORK 1 902:0
+
+# ===================================================================
+# ROW 3: y[3] = 7*x[1] + 8*x[3] = 7*2 + 8*4 = 46
+# ===================================================================
+
+# --- Element 0: values[6] * x[col_ind[6]] ---
+
+# Load values[6]
+850 INPUT 0 851:0
+851 LOAD 1 852:0
+
+# Load col_ind[6]
+853 INPUT 0 854:0
+854 LOAD 1 855:0
+
+# x_addr = base_x + col_ind
+856 INPUT 0 857:0
+855 FORK 1 857:1
+857 ADD 2 858:0
+
+# Load x[col_ind[6]]
+858 LOAD 1 859:0
+
+# product0 = value * x_val
+852 FORK 1 860:0
+859 FORK 1 860:1
+860 MULT 2 861:0
+
+# --- Element 1: values[7] * x[col_ind[7]] ---
+
+# Load values[7]
+862 INPUT 0 863:0
+863 LOAD 1 864:0
+
+# Load col_ind[7]
+865 INPUT 0 866:0
+866 LOAD 1 867:0
+
+# x_addr = base_x + col_ind
+868 INPUT 0 869:0
+867 FORK 1 869:1
+869 ADD 2 870:0
+
+# Load x[col_ind[7]]
+870 LOAD 1 871:0
+
+# product1 = value * x_val
+864 FORK 1 872:0
+871 FORK 1 872:1
+872 MULT 2 873:0
+
+# --- Sum products ---
+861 FORK 1 874:0
+873 FORK 1 874:1
+874 ADD 2 875:0
+
+# Store y[3]
+876 INPUT 0 877:0
+875 FORK 1 877:1
+877 STORE 2 878:0
+
+878 FORK 1 903:0
+
+# ===================================================================
+# FINAL SYNC
+# ===================================================================
+900 FORK 1 950:0
+901 FORK 1 950:1
+950 ADD 2 951:0
+902 FORK 1 952:0
+903 FORK 1 952:1
+952 ADD 2 953:0
+951 FORK 1 954:0
+953 FORK 1 954:1
+954 ADD 2 999:0
+
+999 OUTPUT 1
+)");
+    
+    Dataflow df;
+    df.load_program(temp_file_);
+    
+    df.run({
+        // Memory: values [1, 2, 3, 4, 5, 6, 7, 8]
+        100, 1,    // values[0]=1
+        104, 2,    // values[1]=2
+        108, 3,    // values[2]=3
+        112, 4,    // values[3]=4
+        116, 5,    // values[4]=5
+        120, 6,    // values[5]=6
+        124, 7,    // values[6]=7
+        128, 8,    // values[7]=8
+        
+        // Memory: col_ind (pre-scaled by 4)
+        // Row 0: cols 0, 2 → offsets 0, 8
+        // Row 1: cols 1, 3 → offsets 4, 12
+        // Row 2: cols 0, 2 → offsets 0, 8
+        // Row 3: cols 1, 3 → offsets 4, 12
+        200, 0,    // col_ind[0]=0  (col 0)
+        204, 8,    // col_ind[1]=8  (col 2)
+        208, 4,    // col_ind[2]=4  (col 1)
+        212, 12,   // col_ind[3]=12 (col 3)
+        216, 0,    // col_ind[4]=0  (col 0)
+        220, 8,    // col_ind[5]=8  (col 2)
+        224, 4,    // col_ind[6]=4  (col 1)
+        228, 12,   // col_ind[7]=12 (col 3)
+        
+        // Memory: vector_x [1, 2, 3, 4]
+        300, 1,    // x[0]=1
+        304, 2,    // x[1]=2
+        308, 3,    // x[2]=3
+        312, 4,    // x[3]=4
+        
+        // Row 0 addresses (elements 0, 1)
+        100,       // values[0]
+        200,       // col_ind[0]
+        300,       // base_x
+        104,       // values[1]
+        204,       // col_ind[1]
+        300,       // base_x
+        400,       // y[0] output
+        
+        // Row 1 addresses (elements 2, 3)
+        108,       // values[2]
+        208,       // col_ind[2]
+        300,       // base_x
+        112,       // values[3]
+        212,       // col_ind[3]
+        300,       // base_x
+        404,       // y[1] output
+        
+        // Row 2 addresses (elements 4, 5)
+        116,       // values[4]
+        216,       // col_ind[4]
+        300,       // base_x
+        120,       // values[5]
+        220,       // col_ind[5]
+        300,       // base_x
+        408,       // y[2] output
+        
+        // Row 3 addresses (elements 6, 7)
+        124,       // values[6]
+        224,       // col_ind[6]
+        300,       // base_x
+        128,       // values[7]
+        228,       // col_ind[7]
+        300,       // base_x
+        412        // y[3] output
+    });
+    
+    EXPECT_TRUE(df.is_idle());
+    
+    const auto& stats = df.get_stats();
+    
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "=== SpMV 4x4 Matrix (Dataflow) ===" << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << "4x4 sparse matrix with 8 non-zeros" << std::endl;
+    std::cout << "Expected Y: [7, 22, 23, 46]" << std::endl;
+    
+    std::cout << "\n=== Dataflow Execution Metrics ===" << std::endl;
+    std::cout << "Total Cycles: " << stats.total_cycles << std::endl;
+    std::cout << "Max Parallelism: " << stats.max_parallel_tasks << std::endl;
+    std::cout << "Avg Parallelism: " << stats.get_avg_parallelism() << std::endl;
+    std::cout << "Tokens Generated: " << stats.tokens_generated << std::endl;
+    std::cout << "Tokens Consumed: " << stats.tokens_consumed << std::endl;
+    std::cout << "Idle Cycles: " << stats.idle_cycles << std::endl;
+    std::cout << "Active Cycles: " << stats.cycles_with_activity << std::endl;
+    
+    std::cout << "\n=== Parallelism Analysis ===" << std::endl;
+    std::cout << "All 4 rows compute IN PARALLEL!" << std::endl;
+    std::cout << "Within each row, 2 element computations also run in parallel." << std::endl;
+    std::cout << "Max theoretical parallelism: 8 MULTs simultaneously" << std::endl;
+    
+    std::cout << "\n=== Expected Results ===" << std::endl;
+    std::cout << "  y[0] = 1*1 + 2*3 = 7" << std::endl;
+    std::cout << "  y[1] = 3*2 + 4*4 = 22" << std::endl;
+    std::cout << "  y[2] = 5*1 + 6*3 = 23" << std::endl;
+    std::cout << "  y[3] = 7*2 + 8*4 = 46" << std::endl;
+    
+    std::cout << "\n=== Key Advantage: No Dependent Load Stalls ===" << std::endl;
+    std::cout << "Von Neumann: Sequential loop with pointer chasing" << std::endl;
+    std::cout << "Dataflow: All rows fire when data is ready" << std::endl;
+    std::cout << "========================================\n" << std::endl;
+    
+    // Dataflow should achieve high parallelism
+    // 8 independent multiply chains can execute
+    EXPECT_GE(stats.max_parallel_tasks, 4u);
+    
+    // Should complete much faster than Von Neumann sequential execution
+    EXPECT_LE(stats.total_cycles, 500u);
+}

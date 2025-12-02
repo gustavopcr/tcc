@@ -2373,6 +2373,31 @@ TEST_F(EmulatorTest, RLECompression_LongInput) {
     
     auto stats = cpu.get_stats();
     std::cerr << "Branch mispredictions: " << stats.branch_mispredictions << std::endl;
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "=== RLE Long Input (Von Neumann/MIPS) ===" << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << "Input: \"AAAAABBBBCCDDDDDDD\" (18 chars)" << std::endl;
+    
+    std::cout << "\n=== Execution Metrics ===" << std::endl;
+    std::cout << "Total Cycles: " << stats.cycles << std::endl;
+    std::cout << "Instructions Committed: " << stats.instructions_committed << std::endl;
+    std::cout << "IPC: " << stats.get_ipc() << std::endl;
+    
+    std::cout << "\n=== Stall Breakdown ===" << std::endl;
+    std::cout << "Fetch Stalls (Von Neumann Bottleneck): " << stats.fetch_stalls << std::endl;
+    std::cout << "Data Stalls: " << stats.data_stalls << std::endl;
+    std::cout << "ROB Full Stalls: " << stats.rob_full_stalls << std::endl;
+    std::cout << "RS Full Stalls: " << stats.rs_full_stalls << std::endl;
+    std::cout << "EU Busy Stalls: " << stats.eu_busy_stalls << std::endl;
+    std::cout << "Total Stalls: " << stats.get_total_stalls() << std::endl;
+    
+    std::cout << "\n=== Memory Metrics ===" << std::endl;
+    std::cout << "Memory Accesses: " << stats.memory_accesses << std::endl;
+    std::cout << "Memory Contention Ratio: " 
+              << (stats.get_memory_contention_ratio() * 100) << "%" << std::endl;
+    
+    std::cout << "\n=== Branch Prediction ===" << std::endl;
+    std::cout << "Branch Mispredictions: " << stats.branch_mispredictions << std::endl;
     
     EXPECT_EQ(cpu.get_memory(2560), 5u);
     EXPECT_EQ(cpu.get_memory(2564), 0x41u);
