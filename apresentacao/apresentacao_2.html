@@ -171,6 +171,84 @@
         #slide-1 .slide-body { align-items: center; text-align: center; padding-top: 0; justify-content: center; }
         .institution { margin-top: 30px; font-size: 1.1rem; color: #64748b; }
 
+        /* --- FLUXO DE INSTRUÇÕES (TOPO) --- */
+        .instruction-stream {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #e2e8f0;
+            border: 1px solid #94a3b8;
+        }
+
+        .inst-box {
+            padding: 10px 15px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border: 1px solid #64748b;
+            background: #fff;
+            color: #94a3b8; /* Cor padrão (pendente) */
+        }
+
+        /* Cores Simples para o Stream */
+        .inst-box.active { background-color: #fff; color: #333; }
+        .inst-box.exec { background-color: #fef08a; color: #854d0e; border-color: #ca8a04; } /* Amarelo */
+        .inst-box.done { background-color: #bbf7d0; color: #166534; border-color: #16a34a; } /* Verde */
+        .inst-box.stall { background-color: #fecaca; color: #991b1b; border-color: #dc2626; } /* Vermelho */
+
+        /* --- TABELA SIMPLIFICADA COM LINHAS --- */
+        .slide-body {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .cycle-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #475569;
+            padding: 5px 20px;
+            border: 2px solid #475569;
+            background: #f1f5f9;
+        }
+
+        .simple-table {
+            width: 100%;
+            max-width: 900px;
+            border-collapse: collapse; /* FUNDAMENTAL: Junta as bordas criando linhas finas */
+            font-size: 1.1rem;
+        }
+
+        .simple-table th, .simple-table td {
+            border: 1px solid #475569; /* Linhas pretas/cinzas escuras */
+            padding: 15px;
+            text-align: center;
+        }
+
+        .simple-table th {
+            background-color: #0f766e;
+            color: white;
+            text-transform: uppercase;
+            font-size: 1rem;
+        }
+
+        .rob-inst { font-family: 'Courier New', monospace; font-weight: bold; }
+        
+        /* Cores de Fundo da Tabela (Estados) */
+        .bg-empty { background-color: #f8fafc; color: #cbd5e1; }
+        .bg-wait { background-color: #fee2e2; color: #b91c1c; font-weight: bold; } /* Vermelho Claro */
+        .bg-exec { background-color: #fef9c3; color: #854d0e; } /* Amarelo Claro */
+        .bg-done { background-color: #dcfce7; color: #15803d; font-weight: bold; } /* Verde Claro */
+        
+        /* Destaque para o HEAD */
+        .is-head { border-left: 5px solid #ef4444 !important; }
+
     </style>
 </head>
 <body>
@@ -264,6 +342,225 @@
     <div class="slide-footer">4 / 6</div>
 </div>
 
+        <div class="slide active">
+            <div class="slide-header"><h2>Simulação ROB: Início</h2></div>
+            
+            <div class="instruction-stream">
+                <div class="inst-box exec">LW r1, MEM</div>
+                <div class="inst-box">ADD r2, r1</div>
+                <div class="inst-box">SUB r3, r2</div>
+                <div class="inst-box">XOR r4, r3</div>
+            </div>
+
+            <div class="slide-body">
+                <div class="cycle-display">CICLO 01</div>
+                
+                <table class="simple-table">
+                    <thead>
+                        <tr>
+                            <th width="20%">Posição</th>
+                            <th width="40%">Instrução</th>
+                            <th width="40%">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-exec is-head">
+                            <td>1 (TOPO)</td>
+                            <td class="rob-inst">LW r1, MEM</td>
+                            <td>Emitindo / Buscando</td>
+                        </tr>
+                        <tr class="bg-empty">
+                            <td>2</td>
+                            <td>[ Vazio ]</td>
+                            <td>Ocioso</td>
+                        </tr>
+                        <tr class="bg-empty">
+                            <td>3</td>
+                            <td>[ Vazio ]</td>
+                            <td>Ocioso</td>
+                        </tr>
+                        <tr class="bg-empty">
+                            <td>4 (FIM)</td>
+                            <td>[ Vazio ]</td>
+                            <td>Ocioso</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-header"><h2>Simulação ROB: Bloqueio de Memória</h2></div>
+            
+            <div class="instruction-stream">
+                <div class="inst-box stall">LW r1, MEM</div>
+                <div class="inst-box exec">ADD r2, r1</div>
+                <div class="inst-box">SUB r3, r2</div>
+                <div class="inst-box">XOR r4, r3</div>
+            </div>
+
+            <div class="slide-body">
+                <div class="cycle-display">CICLO 02</div>
+                
+                <table class="simple-table">
+                    <thead>
+                        <tr><th>Posição</th><th>Instrução</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-wait is-head">
+                            <td>1 (TOPO)</td>
+                            <td class="rob-inst">LW r1, MEM</td>
+                            <td>ESPERANDO MEMÓRIA (Lento)</td>
+                        </tr>
+                        <tr class="bg-exec">
+                            <td>2</td>
+                            <td class="rob-inst">ADD r2, r1</td>
+                            <td>Executando</td>
+                        </tr>
+                        <tr class="bg-empty">
+                            <td>3</td>
+                            <td>[ Vazio ]</td>
+                            <td>Ocioso</td>
+                        </tr>
+                        <tr class="bg-empty">
+                            <td>4 (FIM)</td>
+                            <td>[ Vazio ]</td>
+                            <td>Ocioso</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-header"><h2>Simulação ROB: Execução Fora de Ordem</h2></div>
+            
+            <div class="instruction-stream">
+                <div class="inst-box stall">LW r1, MEM</div>
+                <div class="inst-box done">ADD r2, r1</div>
+                <div class="inst-box exec">SUB r3, r2</div>
+                <div class="inst-box">XOR r4, r3</div>
+            </div>
+
+            <div class="slide-body">
+                <div class="cycle-display">CICLO 03</div>
+                
+                <table class="simple-table">
+                    <thead>
+                        <tr><th>Posição</th><th>Instrução</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-wait is-head">
+                            <td>1 (TOPO)</td>
+                            <td class="rob-inst">LW r1, MEM</td>
+                            <td>ESPERANDO MEMÓRIA</td>
+                        </tr>
+                        <tr class="bg-done">
+                            <td>2</td>
+                            <td class="rob-inst">ADD r2, r1</td>
+                            <td>PRONTO (Aguardando Topo)</td>
+                        </tr>
+                        <tr class="bg-exec">
+                            <td>3</td>
+                            <td class="rob-inst">SUB r3, r2</td>
+                            <td>Executando</td>
+                        </tr>
+                        <tr class="bg-empty">
+                            <td>4 (FIM)</td>
+                            <td>[ Vazio ]</td>
+                            <td>Ocioso</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-header"><h2>Simulação ROB: Acúmulo</h2></div>
+            
+            <div class="instruction-stream">
+                <div class="inst-box stall">LW r1, MEM</div>
+                <div class="inst-box done">ADD r2, r1</div>
+                <div class="inst-box done">SUB r3, r2</div>
+                <div class="inst-box exec">XOR r4, r3</div>
+            </div>
+
+            <div class="slide-body">
+                <div class="cycle-display">CICLO 04</div>
+                
+                <table class="simple-table">
+                    <thead>
+                        <tr><th>Posição</th><th>Instrução</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-wait is-head">
+                            <td>1 (TOPO)</td>
+                            <td class="rob-inst">LW r1, MEM</td>
+                            <td>ESPERANDO MEMÓRIA</td>
+                        </tr>
+                        <tr class="bg-done">
+                            <td>2</td>
+                            <td class="rob-inst">ADD r2, r1</td>
+                            <td>PRONTO (Bloqueado)</td>
+                        </tr>
+                        <tr class="bg-done">
+                            <td>3</td>
+                            <td class="rob-inst">SUB r3, r2</td>
+                            <td>PRONTO (Bloqueado)</td>
+                        </tr>
+                        <tr class="bg-exec">
+                            <td>4 (FIM)</td>
+                            <td class="rob-inst">XOR r4, r3</td>
+                            <td>Executando</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-header"><h2>Simulação ROB: STALL (Colapso)</h2></div>
+            
+            <div class="instruction-stream">
+                <div class="inst-box stall">LW r1, MEM</div>
+                <div class="inst-box done">ADD r2, r1</div>
+                <div class="inst-box done">SUB r3, r2</div>
+                <div class="inst-box done">XOR r4, r3</div>
+            </div>
+
+            <div class="slide-body">
+                <div class="cycle-display" style="background-color: #fee2e2; color: #991b1b; border-color: #ef4444;">CICLO 05 - TRAVADO</div>
+                
+                <table class="simple-table">
+                    <thead>
+                        <tr><th>Posição</th><th>Instrução</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-wait is-head">
+                            <td>1 (TOPO)</td>
+                            <td class="rob-inst">LW r1, MEM</td>
+                            <td>BLOQUEANDO SAÍDA</td>
+                        </tr>
+                        <tr class="bg-done">
+                            <td>2</td>
+                            <td class="rob-inst">ADD r2, r1</td>
+                            <td>PRONTO (Preso)</td>
+                        </tr>
+                        <tr class="bg-done">
+                            <td>3</td>
+                            <td class="rob-inst">SUB r3, r2</td>
+                            <td>PRONTO (Preso)</td>
+                        </tr>
+                        <tr class="bg-done">
+                            <td>4 (FIM)</td>
+                            <td class="rob-inst">XOR r4, r3</td>
+                            <td>PRONTO (Preso)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="margin-top: 20px; color: #b91c1c; font-weight: bold;">ROB CHEIO: Novas instruções não podem entrar.</p>
+            </div>
+        </div>
 
     <div class="slide" id="slide-4">
         <div class="slide-content">
