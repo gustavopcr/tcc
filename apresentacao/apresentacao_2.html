@@ -123,6 +123,16 @@
         
         .column { flex: 1; display: flex; flex-direction: column; }
 
+        /* --- Correção para Imagens dentro das Colunas --- */
+        .column img {
+            max-width: 100%;      /* Garante que a imagem não ultrapasse a largura da coluna */
+            height: auto;         /* Mantém a proporção correta (não estica) */
+            display: block;       /* Remove espaços extras abaixo da imagem */
+            
+            /* Opcional: Estilo para combinar com o resto do template */
+            border-radius: 8px;   /* Bordas arredondadas suaves */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Uma sombra leve para destaque */
+        }
         /* Placeholder para imagens/diagramas */
         .img-placeholder {
             width: 100%;
@@ -254,24 +264,25 @@
 <body>
 
 <div id="presentation-container">
-    <!-- Slide 1 -->
-    <div class="slide active" id="slide-1">
-        <div class="slide-content">
-            <div class="slide-body">
-                <h3>Trabalho de Conclusão de Curso</h3>
-                <h1>Análise Comparativa de Arquiteturas: Von Neumann vs. Dataflow</h1>
-                <h3>Mitigando Stalls em Workloads de Datacenter Modernos</h3>
-                <div class="institution">
-                    <p><strong>Autor:</strong> [Seu Nome]</p>
-                    <p><strong>Orientador:</strong> [Nome do Orientador]</p>
-                    <p style="margin-top: 20px; font-size: 1rem;">Universidade [Nome] - 2025</p>
-                </div>
+
+
+<div class="slide active" id="slide-1">
+    <div class="slide-content">
+        <div class="slide-body">
+            <h3>Trabalho de Conclusão de Curso</h3>
+            <h1>Análise Comparativa de Arquiteturas: Von Neumann vs. Dataflow</h1>
+            <h3>Mitigando Stalls em Workloads de Datacenter Modernos</h3>
+            <div class="institution">
+                <p><strong>Autor:</strong> [Seu Nome]</p>
+                <p><strong>Orientador:</strong> [Nome do Orientador]</p>
+                <p style="margin-top: 20px; font-size: 1rem;">Universidade [Nome] - 2025</p>
             </div>
         </div>
-        <div class="slide-footer">1 / 6</div>
     </div>
+    <div class="slide-footer">1 / X</div>
+</div>
 
-    <!-- Slide 2 -->
+
 <div class="slide" id="slide-2">
     <div class="slide-content">
         <div class="slide-header"><h2>Agenda</h2></div>
@@ -289,10 +300,10 @@
             </ul>
         </div>
     </div>
-    <div class="slide-footer">2 / 6</div>
+    <div class="slide-footer">2 / X</div>
 </div>
 
-<!-- Slide 3 -->
+
 <div class="slide" id="slide-3">
     <div class="slide-content">
         <div class="slide-header"><h2>Contexto</h2></div>
@@ -312,10 +323,10 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">3 / 6</div>
+    <div class="slide-footer">3 / X</div>
 </div>
 
-<!-- Slide 4 -->
+
 <div class="slide" id="slide-4">
     <div class="slide-content">
         <div class="slide-header"><h2>Contexto</h2></div>
@@ -339,10 +350,33 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">4 / 6</div>
+    <div class="slide-footer">4 / X</div>
 </div>
 
+
 <div class="slide" id="slide-5">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Gargalo de Von Neumann</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Acesso a memória é bem mais devagar do que processamento</li>
+                        <li>Uso de caches ajuda a mitigar mas não resolve o problema por completo</li>
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/memory_wall_1.png" alt="Imagem Memory Wall">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">5 / X</div>
+</div>
+
+
+<div class="slide" id="slide-6">
             <div class="slide-header"><h2>Simulação ROB: Início</h2></div>
         
         <div class="instruction-stream">
@@ -387,10 +421,10 @@
                 </tbody>
             </table>
         </div>  
-  <div class="slide-footer">5 / X</div>
+  <div class="slide-footer">6 / X</div>
 </div>
 
-<div class="slide" id="slide-6">
+<div class="slide" id="slide-7">
               <div class="slide-header"><h2>Simulação ROB: Bloqueio de Memória</h2></div>
         
         <div class="instruction-stream">
@@ -431,11 +465,11 @@
                 </tbody>
             </table>
         </div>
-  <div class="slide-footer">6 / X</div>
+  <div class="slide-footer">7 / X</div>
 </div>
 
 
-<div class="slide" id="slide-7">
+<div class="slide" id="slide-8">
         <div class="slide-header"><h2>Simulação ROB: Execução Fora de Ordem</h2></div>
         
         <div class="instruction-stream">
@@ -476,10 +510,10 @@
                 </tbody>
             </table>
         </div>
-  <div class="slide-footer">7 / X</div>
+  <div class="slide-footer">8 / X</div>
 </div>
 
-<div class="slide" id="slide-8">
+<div class="slide" id="slide-9">
       <div class="slide-header"><h2>Simulação ROB: Acúmulo</h2></div>
       
       <div class="instruction-stream">
@@ -520,10 +554,10 @@
               </tbody>
           </table>
       </div>
-<div class="slide-footer">8 / X</div>
+<div class="slide-footer">9 / X</div>
 </div>
 
-<div class="slide" id="slide-9">
+<div class="slide" id="slide-10">
   <div class="slide-header"><h2>Simulação ROB: STALL (Colapso)</h2></div>
   
   <div class="instruction-stream">
@@ -565,9 +599,358 @@
       </table>
       <p style="margin-top: 20px; color: #b91c1c; font-weight: bold;">ROB CHEIO: Novas instruções não podem entrar.</p>
   </div>
-<div class="slide-footer">9 / X</div>
+<div class="slide-footer">10 / X</div>
 </div>
 
+<div class="slide" id="slide-11">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Problema</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Lei de Moore: <strong>Está morta</strong>.</li>
+                        <li>Escala de Dennard: <strong>Stalls e Stalls</strong>.</li>
+                        <li>Dark Sillicon</li>
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/moore_1.png" alt="Imagem Memory Wall">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">11 / X</div>
+</div>
+
+<!-- Slide 11 -->
+<div class="slide" id="slide-12">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Trabalhos Relacionados</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Profiling a Warehouse-scale computer:<strong> Profiling realizado pela Google em seus datacenters, analisando vários tipos de carga.</strong>.</li>
+                        <li style="margin-top: 20px;"><strong>CPU permanece grande parte do tempo em bolhas: </strong> 50% - 60% gasto no gargalo de Von Neumann</li>
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/warehouse_scale_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">12 / X</div>
+</div>
+
+<div class="slide" id="slide-13">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Trabalhos Relacionados</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul style="font-size: 1.1em;">
+                        <li style="margin-bottom: 40px;">
+                            <strong>Google TPU v1</strong> <span style="font-size: 0.7em; color: #64748b;">(Jouppi et al., ISCA 2017)</span>
+                            <br>
+                            Abordagem: <span style="color: #0d9488;">Systolic Arrays</span>.
+                            <br>
+                            <span style="color: #be123c; font-weight: 700; font-size: 0.9em;">
+                                ⚠ 30x - 80x mais eficiente (TOPS/Watt)
+                            </span>
+                        </li>
+
+                        <li>
+                            <strong>Samsung HBM-PIM</strong> <span style="font-size: 0.7em; color: #64748b;">(Kwon et al., ISSCC 2021)</span>
+                            <br>
+                            Abordagem: <span style="color: #0d9488;">Processing In-Memory</span>.
+                            <br>
+                            <span style="color: #be123c; font-weight: 700; font-size: 0.9em;">
+                                ⚠ 70% de redução de energia
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/von_neumann_1.png" alt="Comparativo de Arquiteturas">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">13 / X</div>
+</div>
+
+<!-- Slide 13 -->
+<div class="slide" id="slide-14">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Proposta - Dataflow</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Arquitetura orientada a dados ao invés de instruções<strong></strong>.</li>
+                        <li style="margin-top: 20px;"><strong>Conceito de Programa Armazenado:</strong> Instruções e dados são representados da mesma forma.</li>
+                        <li style="margin-top: 20px;"><strong>Execução Sequencial:</strong> Controle de fluxo através do registrador <em>Program Counter</em> (PC).</li>
+                        <li>PIM<strong>Processing In-Memory</strong>.</li>
+                    
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/dataflow_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">14 / X</div>
+</div>
+
+<!-- Slide 13 -->
+<div class="slide" id="slide-15">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Proposta - Dataflow</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Mencionar unidades da arquitetura Dataflow<strong></strong>.</li>
+                        <li style="margin-top: 20px;"><strong>Conceito de Programa Armazenado:</strong> Instruções e dados são representados da mesma forma.</li>
+                        <li style="margin-top: 20px;"><strong>Execução Sequencial:</strong> Controle de fluxo através do registrador <em>Program Counter</em> (PC).</li>
+                        <li>PIM<strong>Processing In-Memory</strong>.</li>
+                    
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/dataflow_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">15 / X</div>
+</div>
+
+<!-- Slide 14 -->
+<div class="slide" id="slide-16">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Proposta - Dataflow</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Pontos Fortes<strong></strong>.</li>
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/dataflow_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">16 / X</div>
+</div>
+
+<!-- Slide 15 -->
+<div class="slide" id="slide-17">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Proposta - Dataflow</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Pontos Fracos<strong></strong>.</li>
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/dataflow_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">17 / X</div>
+</div>
+
+<!-- Slide 16 -->
+<div class="slide" id="slide-18">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Metodologia</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Construção de Emulador Von Neumann e Dataflow<strong></strong>.</li>
+                        <li>Comparação de algortimos comuns<strong></strong>.</li>
+                    
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/dataflow_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">18 / X</div>
+</div>
+
+
+<!-- Slide 17 -->
+<div class="slide" id="slide-19">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Metodologia</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Construção de Emulador Von Neumann e Dataflow<strong></strong>.</li>
+                        <li>Comparação de algortimo:s<strong></strong>.</li>
+                        <li>Run-Length Encoding<strong></strong>.</li>
+                        <li>Sparse Matrix-Vector Multiplication<strong></strong>.</li>
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/dataflow_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">19 / X</div>
+</div>
+
+<div class="slide" id="slide-20">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Resultados: Run-Length Encoding (RLE)</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <h3 style="font-size: 1.2rem; color: #64748b; margin-bottom: 15px;">Comparativo: Long Input</h3>
+                    
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>Métrica</th>
+                                <th>Von Neumann</th>
+                                <th>Dataflow (Proposto)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Ciclos Totais</strong></td>
+                                <td>351</td>
+                                <td style="color: #10b981; font-weight: bold;">270 (▼23%)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>IPC</strong></td>
+                                <td>0.98</td>
+                                <td style="color: #0d9488; font-weight: bold;">3.72</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Paralelismo Máx.</strong></td>
+                                <td>1</td>
+                                <td style="color: #0d9488; font-weight: bold;">4</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ineficiência</strong></td>
+                                <td style="color: #ef4444;">50 (Stalls)</td>
+                                <td style="color: #10b981; font-weight: bold;">5 (Idle Cycles)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="highlight-box" style="margin-top: 20px; font-size: 0.9em;">
+                        <strong>Destaque:</strong> Enquanto o MIPS sofre com 50 ciclos de Stalls (espera), o Dataflow mantém as unidades ocupadas, atingindo um IPC quase <strong>4x maior</strong>.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">20 / X</div>
+</div>
+
+<div class="slide" id="slide-21">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Resultados: SpMV 4x4</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <h3 style="font-size: 1.2rem; color: #64748b; margin-bottom: 15px;">Comparativo: Matriz Esparsa</h3>
+                    
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>Métrica</th>
+                                <th>Von Neumann</th>
+                                <th>Dataflow (Proposto)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Ciclos Totais</strong></td>
+                                <td>427</td>
+                                <td style="color: #10b981; font-weight: bold;">399 (▼6.6%)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>IPC / Paralelismo Médio</strong></td>
+                                <td>0.98</td>
+                                <td style="color: #0d9488; font-weight: bold;">3.81</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Paralelismo Máx.</strong></td>
+                                <td>1</td>
+                                <td style="color: #0d9488; font-weight: bold;">4</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Contenção de Memória</strong></td>
+                                <td style="color: #ef4444; font-weight: bold;">77.8% (Crítico)</td>
+                                <td style="color: #94a3b8;">N/A</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ineficiência</strong></td>
+                                <td style="color: #ef4444;">28 (Stalls)</td>
+                                <td style="color: #10b981; font-weight: bold;">5 (Idle Cycles)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="highlight-box" style="margin-top: 20px; font-size: 0.9em;">
+                        <strong>Análise:</strong> O ganho de ciclos é menor aqui devido à natureza <em>Memory Bound</em> do SpMV. No entanto, note a <strong>Contenção de 77.8%</strong> no Von Neumann (gargalo do barramento), algo que a arquitetura Dataflow elimina por design.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">21 / X</div>
+</div>
+
+<!-- Slide 19 -->
+<div class="slide" id="slide-22">
+    <div class="slide-content">
+        <div class="slide-header"><h2>Conclusão</h2></div>
+        <div class="slide-body">
+            <div class="two-column-layout">
+                <div class="column">
+                    <ul>
+                        <li>Tabela com resultados<strong></strong>.</li>
+                        <li>Slide de resultado para cada algortimo(2)<strong></strong>.</li>
+                    
+                    </ul>
+                </div>
+                
+                <div class="column">
+                    <img src="/home/gust/Documents/tcc/apresentacao/dataflow_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">22 / X</div>
+</div>
 
     <div class="nav-buttons">
         <button class="nav-btn" onclick="changeSlide(-1)">&#8592; Anterior</button>
