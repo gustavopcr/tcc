@@ -279,7 +279,7 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">1 / X</div>
+    <div class="slide-footer">1 / 22</div>
 </div>
 
 
@@ -300,7 +300,7 @@
             </ul>
         </div>
     </div>
-    <div class="slide-footer">2 / X</div>
+    <div class="slide-footer">2 / 22</div>
 </div>
 
 
@@ -323,7 +323,7 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">3 / X</div>
+    <div class="slide-footer">3 / 22</div>
 </div>
 
 
@@ -350,7 +350,7 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">4 / X</div>
+    <div class="slide-footer">4 / 22</div>
 </div>
 
 
@@ -372,7 +372,7 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">5 / X</div>
+    <div class="slide-footer">5 / 22</div>
 </div>
 
 
@@ -421,7 +421,7 @@
                 </tbody>
             </table>
         </div>  
-  <div class="slide-footer">6 / X</div>
+  <div class="slide-footer">6 / 22</div>
 </div>
 
 <div class="slide" id="slide-7">
@@ -465,96 +465,92 @@
                 </tbody>
             </table>
         </div>
-  <div class="slide-footer">7 / X</div>
+  <div class="slide-footer">7 / 22</div>
 </div>
 
 
 <div class="slide" id="slide-8">
-        <div class="slide-header"><h2>Simulação ROB: Execução Fora de Ordem</h2></div>
-        
-        <div class="instruction-stream">
-            <div class="inst-box stall">LW r1, MEM</div>
-            <div class="inst-box done">ADD r2, r1</div>
-            <div class="inst-box exec">SUB r3, r2</div>
-            <div class="inst-box">XOR r4, r3</div>
-        </div>
+    <div class="slide-header"><h2>Simulação ROB: Execução Fora de Ordem</h2></div>
+    
+    <div class="instruction-stream">
+        <div class="inst-box stall">LW r1, MEM</div>
+        <div class="inst-box done">ADD r5, r6</div> <div class="inst-box exec">SUB r8, r9</div> <div class="inst-box">XOR r4, r1</div>      </div>
 
-        <div class="slide-body">
-            <div class="cycle-display">CICLO 03</div>
-            
-            <table class="simple-table">
-                <thead>
-                    <tr><th>Posição</th><th>Instrução</th><th>Estado</th></tr>
-                </thead>
-                <tbody>
-                    <tr class="bg-wait is-head">
-                        <td>1 (TOPO)</td>
-                        <td class="rob-inst">LW r1, MEM</td>
-                        <td>ESPERANDO MEMÓRIA</td>
-                    </tr>
-                    <tr class="bg-done">
-                        <td>2</td>
-                        <td class="rob-inst">ADD r2, r1</td>
-                        <td>PRONTO (Aguardando Topo)</td>
-                    </tr>
-                    <tr class="bg-exec">
-                        <td>3</td>
-                        <td class="rob-inst">SUB r3, r2</td>
-                        <td>Executando</td>
-                    </tr>
-                    <tr class="bg-empty">
-                        <td>4 (FIM)</td>
-                        <td>[ Vazio ]</td>
-                        <td>Ocioso</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-  <div class="slide-footer">8 / X</div>
+    <div class="slide-body">
+        <div class="cycle-display">CICLO 03</div>
+        
+        <table class="simple-table">
+            <thead>
+                <tr><th>Posição</th><th>Instrução</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+                <tr class="bg-wait is-head">
+                    <td>1 (TOPO)</td>
+                    <td class="rob-inst">LW r1, MEM</td>
+                    <td>ESPERANDO MEMÓRIA</td>
+                </tr>
+                <tr class="bg-done">
+                    <td>2</td>
+                    <td class="rob-inst">ADD r5, r6</td>
+                    <td>PRONTO (Aguardando Commit)</td> 
+                </tr>
+                <tr class="bg-exec">
+                    <td>3</td>
+                    <td class="rob-inst">SUB r8, r9</td>
+                    <td>Executando</td>
+                </tr>
+                <tr class="bg-empty">
+                    <td>4 (FIM)</td>
+                    <td>[ Vazio ]</td>
+                    <td>Ocioso</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="slide-footer">8 / 22</div>
 </div>
 
 <div class="slide" id="slide-9">
-      <div class="slide-header"><h2>Simulação ROB: Acúmulo</h2></div>
-      
-      <div class="instruction-stream">
-          <div class="inst-box stall">LW r1, MEM</div>
-          <div class="inst-box done">ADD r2, r1</div>
-          <div class="inst-box done">SUB r3, r2</div>
-          <div class="inst-box exec">XOR r4, r3</div>
-      </div>
+    <div class="slide-header"><h2>Simulação ROB: Acúmulo</h2></div>
+    
+    <div class="instruction-stream">
+        <div class="inst-box stall">LW r1, MEM</div>
+        <div class="inst-box done">ADD r5, r6</div>
+        <div class="inst-box done">SUB r8, r9</div>
+        <div class="inst-box wait">XOR r4, r1</div> </div>
 
-      <div class="slide-body">
-          <div class="cycle-display">CICLO 04</div>
-          
-          <table class="simple-table">
-              <thead>
-                  <tr><th>Posição</th><th>Instrução</th><th>Estado</th></tr>
-              </thead>
-              <tbody>
-                  <tr class="bg-wait is-head">
-                      <td>1 (TOPO)</td>
-                      <td class="rob-inst">LW r1, MEM</td>
-                      <td>ESPERANDO MEMÓRIA</td>
-                  </tr>
-                  <tr class="bg-done">
-                      <td>2</td>
-                      <td class="rob-inst">ADD r2, r1</td>
-                      <td>PRONTO (Bloqueado)</td>
-                  </tr>
-                  <tr class="bg-done">
-                      <td>3</td>
-                      <td class="rob-inst">SUB r3, r2</td>
-                      <td>PRONTO (Bloqueado)</td>
-                  </tr>
-                  <tr class="bg-exec">
-                      <td>4 (FIM)</td>
-                      <td class="rob-inst">XOR r4, r3</td>
-                      <td>Executando</td>
-                  </tr>
-              </tbody>
-          </table>
-      </div>
-<div class="slide-footer">9 / X</div>
+    <div class="slide-body">
+        <div class="cycle-display">CICLO 04</div>
+        
+        <table class="simple-table">
+            <thead>
+                <tr><th>Posição</th><th>Instrução</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+                <tr class="bg-wait is-head">
+                    <td>1 (TOPO)</td>
+                    <td class="rob-inst">LW r1, MEM</td>
+                    <td>ESPERANDO MEMÓRIA</td>
+                </tr>
+                <tr class="bg-done">
+                    <td>2</td>
+                    <td class="rob-inst">ADD r5, r6</td>
+                    <td>PRONTO (Bloqueado pelo Topo)</td>
+                </tr>
+                <tr class="bg-done">
+                    <td>3</td>
+                    <td class="rob-inst">SUB r8, r9</td>
+                    <td>PRONTO (Bloqueado pelo Topo)</td>
+                </tr>
+                <tr class="bg-exec">
+                    <td>4 (FIM)</td>
+                    <td class="rob-inst">XOR r4, r1</td>
+                    <td>Executando</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="slide-footer">9 / 22</div>
 </div>
 
 <div class="slide" id="slide-10">
@@ -599,7 +595,7 @@
       </table>
       <p style="margin-top: 20px; color: #b91c1c; font-weight: bold;">ROB CHEIO: Novas instruções não podem entrar.</p>
   </div>
-<div class="slide-footer">10 / X</div>
+<div class="slide-footer">10 / 22</div>
 </div>
 
 <div class="slide" id="slide-11">
@@ -620,10 +616,9 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">11 / X</div>
+    <div class="slide-footer">11 / 22</div>
 </div>
 
-<!-- Slide 11 -->
 <div class="slide" id="slide-12">
     <div class="slide-content">
         <div class="slide-header"><h2>Trabalhos Relacionados</h2></div>
@@ -644,7 +639,7 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">12 / X</div>
+    <div class="slide-footer">12 / 22</div>
 </div>
 
 <div class="slide" id="slide-13">
@@ -671,10 +666,9 @@
             </ul>
         </div>
     </div>
-    <div class="slide-footer">13 / X</div>
+    <div class="slide-footer">13 / 22</div>
 </div>
 
-<!-- Slide 13 -->
 <div class="slide" id="slide-14">
     <div class="slide-content">
         <div class="slide-header"><h2>Proposta - Dataflow</h2></div>
@@ -693,11 +687,10 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">14 / X</div>
+    <div class="slide-footer">14 / 22</div>
 </div>
 
-
-<div class="slide" id="slide-16">
+<div class="slide" id="slide-15">
     <div class="slide-content">
         <div class="slide-header"><h2>Dataflow - Pontos Fortes</h2></div>
         <div class="slide-body">
@@ -716,10 +709,10 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">16 / X</div>
+    <div class="slide-footer">15 / 22</div>
 </div>
 
-<div class="slide" id="slide-17">
+<div class="slide" id="slide-16">
     <div class="slide-content">
         <div class="slide-header"><h2>Dataflow - Pontos Fracos</h2></div>
         <div class="slide-body">
@@ -739,13 +732,10 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">17 / X</div>
+    <div class="slide-footer">16 / 22</div>
 </div>
 
-
-
-<!-- Slide 17 -->
-<div class="slide" id="slide-18">
+<div class="slide" id="slide-17">
     <div class="slide-content">
         <div class="slide-header"><h2>Metodologia</h2></div>
         <div class="slide-body">
@@ -760,10 +750,10 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">18 / X</div>
+    <div class="slide-footer">17 / 22</div>
 </div>
 
-<div class="slide" id="slide-19">
+<div class="slide" id="slide-18">
     <div class="slide-content">
         <div class="slide-header"><h2>Resultados: Run-Length Encoding (RLE)</h2></div>
         <div class="slide-body">
@@ -810,10 +800,10 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">19 / X</div>
+    <div class="slide-footer">18 / 22</div>
 </div>
 
-<div class="slide" id="slide-20">
+<div class="slide" id="slide-19">
     <div class="slide-content">
         <div class="slide-header"><h2>Resultados: SpMV 4x4</h2></div>
         <div class="slide-body">
@@ -865,10 +855,10 @@
             </div>
         </div>
     </div>
-    <div class="slide-footer">20 / X</div>
+    <div class="slide-footer">19 / 22</div>
 </div>
 
-<div class="slide" id="slide-21">
+<div class="slide" id="slide-20">
     <div class="slide-content">
         <div class="slide-header"><h2>Conclusão</h2></div>
         <div class="slide-body">
@@ -892,7 +882,7 @@
             </ul>
         </div>
     </div>
-  <div class="slide-footer">21 / X</div>
+  <div class="slide-footer">20 / 22</div>
 
 </div>
 
@@ -904,33 +894,34 @@
             <p style="margin-top: 20px;">E à banca examinadora, pela disponibilidade e valiosas contribuições.</p>
         </div>
     </div>
-  <div class="slide-footer">22 / X</div>
+  <div class="slide-footer">21 / 22</div>
 
 </div>
 
-        <!-- Slide 24: Principais Referências -->
-<div class="slide" id="slide-23">
+<div class="slide" id="slide-22">
     <div class="slide-content">
         <div class="slide-header"><h2>Principais Referências</h2></div>
         <div class="slide-body">
             <ul class="references-list-detailed">
                 <li>
-                    <strong>Nihal, R. A., Rahman, S., Broti, N. M., & Deowan, S. A. (2021).</strong> Bangla sign alphabet recognition with zero-shot and transfer learning. <i>Pattern Recognition Letters</i>, 150, 84-93.
+                    <strong>Jouppi, N. P. et al. (2017).</strong> In-Datacenter Performance Analysis of a Tensor Processing Unit. <i>44th International Symposium on Computer Architecture (ISCA)</i>.
                 </li>
+                
                 <li>
-                    <strong>Bilge, Y. C., Cinbis, R. G., & Ikizler-Cinbis, N. (2022).</strong> Towards zero-shot sign language recognition. <i>IEEE Transactions on Pattern Analysis and Machine Intelligence</i>, 45(1), 1217-1232.
+                    <strong>Kwon, Y. C. et al. (2021).</strong> 25.4 A 20nm 6GB/s/pin 16Gb LPDDR5/DDR5-based PIM DRAM. <i>IEEE International Solid-State Circuits Conference (ISSCC)</i>.
                 </li>
+
                 <li>
-                    <strong>Sarmento, A. H. d. A. (2023).</strong> <i>Integração de datasets de vídeo para tradução automática de libras com aprendizado profundo</i> (Tese de Doutorado). Universidade de São Paulo.
+                    <strong>Kanev, S. et al. (2015).</strong> Profiling a warehouse-scale computer. <i>42nd Annual International Symposium on Computer Architecture (ISCA)</i>.
                 </li>
+
                 <li>
-                    <strong>Melo, M. G. V. d. (2024).</strong> <i>Detecção em tempo real de sinais de LIBRAS utilizando Visão Computacional</i> (Trabalho de Conclusão de Curso). Centro Federal de Educação Tecnológica de Minas Gerais.
+                    <strong>Moore, G. E. (1965).</strong> Cramming more components onto integrated circuits. <i>Electronics</i>, 38(8):114–117.
                 </li>
             </ul>
         </div>
     </div>
-  <div class="slide-footer">23 / X</div>
-
+  <div class="slide-footer">22 / 22</div>
 </div>
 
     <div class="nav-buttons">
