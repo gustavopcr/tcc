@@ -271,7 +271,7 @@
         <div class="slide-body">
             <h3>Trabalho de Conclusão de Curso</h3>
             <h1>Análise Comparativa de Arquiteturas: Von Neumann vs. Dataflow</h1>
-            <h3>Mitigando Stalls em Workloads de Datacenter Modernos</h3>
+            <h3>Mitigando Stalls em Workloads Modernos</h3>
             <div class="institution">
                 <p><strong>Autor:</strong>Gustavo Pereira Cristófaro</p>
                 <p><strong>Orientador:</strong> Ricardo Carlini Sperandio</p>
@@ -340,7 +340,7 @@
                         
                         <li style="margin-top: 20px;"><strong>Execução Fora de Ordem:</strong> Processamento dinâmico baseado na disponibilidade de dados, não apenas na sequência do código.</li>
                     
-                        <li style="margin-top: 20px;"><strong>Superescalar:</strong> ...</li>
+                        <li style="margin-top: 20px;"><strong>Superescalar:</strong> Capacidade de buscar, decodificar, executar e despachar várias instruções simultaneamente</li>
                     </ul>
                 </div>
                 
@@ -361,8 +361,8 @@
             <div class="two-column-layout">
                 <div class="column">
                     <ul>
-                        <li>Acesso a memória é bem mais devagar do que processamento</li>
-                        <li>Uso de caches ajuda a mitigar mas não resolve o problema por completo</li>
+                        <li>Acesso a memória é ordens de magnitude mais lento do que processamento</li>
+                        <li>Uso de caches ajuda a mitigar a latência mas não resolve o problema por completo</li>
                     </ul>
                 </div>
                 
@@ -609,9 +609,8 @@
             <div class="two-column-layout">
                 <div class="column">
                     <ul>
-                        <li>Lei de Moore: <strong>Está morta</strong>.</li>
-                        <li>Escala de Dennard: <strong>Stalls e Stalls</strong>.</li>
-                        <li>Dark Sillicon</li>
+                        <li><strong>Lei de Moore:</strong> Desaceleração severa.</li>
+                        <li><strong>Fim da escala de Dennard:</strong> Ao reduzir  o tamanho dos transistores, a densidade da potência se mantém constante.</li>
                     </ul>
                 </div>
                 
@@ -632,11 +631,13 @@
             <div class="two-column-layout">
                 <div class="column">
                     <ul>
-                        <li>Profiling a Warehouse-scale computer:<strong> Profiling realizado pela Google em seus datacenters, analisando vários tipos de carga.</strong>.</li>
-                        <li style="margin-top: 20px;"><strong>CPU permanece grande parte do tempo em bolhas: </strong> 50% - 60% gasto no gargalo de Von Neumann</li>
+                        <li><strong>Profiling a Warehouse-scale computer:</strong></li>
+                        <ul>
+                            <li>Profiling realizado pela Google em seus datacenters, analisando vários tipos de carga.</li>
+                            <li style="margin-top: 20px;">CPU permanece grande parte do tempo em bolhas, <strong> 50% - 60%</strong> do tempo esperando dados.</li>
+                        </ul>  
                     </ul>
                 </div>
-                
                 <div class="column">
                     <img src="/home/gust/Documents/tcc/apresentacao/warehouse_scale_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
                 </div>
@@ -650,35 +651,24 @@
     <div class="slide-content">
         <div class="slide-header"><h2>Trabalhos Relacionados</h2></div>
         <div class="slide-body">
-            <div class="two-column-layout">
-                <div class="column">
-                    <ul style="font-size: 1.1em;">
-                        <li style="margin-bottom: 40px;">
-                            <strong>Google TPU v1</strong> <span style="font-size: 0.7em; color: #64748b;">(Jouppi et al., ISCA 2017)</span>
-                            <br>
-                            Abordagem: <span style="color: #0d9488;">Systolic Arrays</span>.
-                            <br>
-                            <span style="color: #be123c; font-weight: 700; font-size: 0.9em;">
-                                ⚠ 30x - 80x mais eficiente (TOPS/Watt)
-                            </span>
-                        </li>
-
-                        <li>
-                            <strong>Samsung HBM-PIM</strong> <span style="font-size: 0.7em; color: #64748b;">(Kwon et al., ISSCC 2021)</span>
-                            <br>
-                            Abordagem: <span style="color: #0d9488;">Processing In-Memory</span>.
-                            <br>
-                            <span style="color: #be123c; font-weight: 700; font-size: 0.9em;">
-                                ⚠ 70% de redução de energia
-                            </span>
-                        </li>
+            <ul>
+                <li>
+                    <strong>Google TPU v1</strong> <span style="font-size: 0.8em; color: #64748b;">(Jouppi et al., ISCA 2017)</span>
+                    <ul>
+                        <li style="margin-top: 20px;"><strong>Systolic Arrays:</strong>TPU utiliza uma malha de ALUs onde os dados fluem, maximizando a reutilização sem acessos intermediários à memória.</li>
+                        <li style="margin-top: 20px;"><strong>Eficiência Energética:</strong> Remove caches genéricos e lógica de controle complexa para dedicar área do silício massivamente à aritmética, atingindo 30x-80x mais eficiência (TOPS/Watt).</li>
                     </ul>
-                </div>
+                </li>
                 
-                <div class="column">
-                    <img src="/home/gust/Documents/tcc/apresentacao/von_neumann_1.png" alt="Comparativo de Arquiteturas">
-                </div>
-            </div>
+                <br>
+                
+                <li>
+                    <strong>Samsung HBM-PIM</strong> <span style="font-size: 0.8em; color: #64748b;">(Kwon et al., ISSCC 2021)</span>
+                    <ul>
+                        <li style="margin-top: 20px;"><strong>Abordagem Near-Data:</strong> Ataca o <em>Memory Wall</em> integrando unidades de processamento diretamente dentro dos bancos de memória, reduzindo a movimentação de dados e o consumo energético em ~70%.</li>
+                    </ul>
+                </li>
+            </ul>
         </div>
     </div>
     <div class="slide-footer">13 / X</div>
@@ -693,10 +683,7 @@
                 <div class="column">
                     <ul>
                         <li>Arquitetura orientada a dados ao invés de instruções<strong></strong>.</li>
-                        <li style="margin-top: 20px;"><strong>Conceito de Programa Armazenado:</strong> Instruções e dados são representados da mesma forma.</li>
-                        <li style="margin-top: 20px;"><strong>Execução Sequencial:</strong> Controle de fluxo através do registrador <em>Program Counter</em> (PC).</li>
-                        <li>PIM<strong>Processing In-Memory</strong>.</li>
-                    
+                        <li>Nós são disparados quando todos os operandos estão disponíveis<strong></strong>.</li>
                     </ul>
                 </div>
                 
@@ -742,7 +729,7 @@
                         <li>Explosão de paralelismo<strong></strong>.</li>
                         <li>Falta de ferramental<strong></strong>.</li>
                         <li>Falta de mecanismo para interrupção<strong></strong>.</li>
-
+                        <li>Alto overhead em comunicação</li>
                     </ul>
                 </div>
                 
@@ -766,14 +753,9 @@
                 <div class="column">
                     <ul>
                         <li>Construção de Emulador Von Neumann e Dataflow<strong></strong>.</li>
-                        <li>Comparação de algortimo:s<strong></strong>.</li>
-                        <li>Run-Length Encoding<strong></strong>.</li>
-                        <li>Sparse Matrix-Vector Multiplication<strong></strong>.</li>
+                        <li>Comparação de algoritmos em cada arquitetura<strong></strong>.</li>
+                        <li>Métricas: Ciclos Totais, IPC, Paralelismo Máximo e Ineficiência<strong></strong>.</li>
                     </ul>
-                </div>
-                
-                <div class="column">
-                    <img src="/home/gust/Documents/tcc/apresentacao/dataflow_1.png" alt="Diagrama esquemático da Arquitetura de Von Neumann">
                 </div>
             </div>
         </div>
@@ -892,6 +874,8 @@
         <div class="slide-body">
             <ul>
                 <li><strong>Resultados Expressivos:</strong> A arquitetura Dataflow se mostra promissora para cargas orientadas a dados, prioriazando vazão máxima ao invés de latência minima.</li>
+                <li><strong>Acelerador de Hardware</strong> Dataflow vem não como substituto para a CPU, mas como um complemento para cargas de trabalho específicas.</li>
+
                 <br>
                 <li><strong>Limitações:</strong>
                     <ul>
